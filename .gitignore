@@ -1,3 +1,6 @@
 # Kubuntu
 .directory
 
+# PyCharm
+.idea
+
