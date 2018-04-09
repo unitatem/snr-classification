@@ -3,4 +3,8 @@
 
 # PyCharm
 .idea
-.log
+
+# Project
+resources
+*.log
+

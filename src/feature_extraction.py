@@ -1,11 +1,9 @@
 import warnings
 
-import bow as bow
+# import bow as bow
 import cv2
 import logging
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
 import os.path
 from sklearn.cluster import MiniBatchKMeans
 
@@ -51,7 +49,6 @@ def match_2_sift_photos(photo1, photo1_desc, photo1_kp, photo2, photo2_desc, pho
     # Sort the matches in the order of their distance.
     matches = sorted(matches, key=lambda x: x.distance)
     logging.debug("Matches: {matches}".format(matches=len(matches)))
-
 
     # draw the top N matches
     match_img = cv2.drawMatches(
@@ -105,9 +102,9 @@ if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
     # important: write file path in double-quotes!
     # ToDO: change paths!
-    photo1_path = "/home/monikas/Desktop/studia/SNR/SET_B/0368/00f163e3707840d1a1a5f2c93be77d16.jpg"
-    # photo2_path = "/home/monikas/Desktop/studia/SNR/SET_B/0373/51056747963b4b27a10b7fcd2c79a135.jpg"
-    photo2_path = "/home/monikas/Desktop/studia/SNR/SET_B/0368/1bb20a82e4b648d1908007e512c3455a.jpg"
+    photo1_path = "../resources/SET_B/0368/00f163e3707840d1a1a5f2c93be77d16.jpg"
+    # photo2_path = "../resources/SET_B/0373/51056747963b4b27a10b7fcd2c79a135.jpg"
+    photo2_path = "../resources/SET_B/0368/1bb20a82e4b648d1908007e512c3455a.jpg"
 
     photo1, photo1_kp, photo1_desc = show_sift_extracted(photo1_path)
     photo2, photo2_kp, photo2_desc = show_sift_extracted(photo2_path)
