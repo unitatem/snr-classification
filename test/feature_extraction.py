@@ -66,7 +66,7 @@ def show_sift_extracted(photo_path):
     photo_gray = to_gray(photo)
     photo_kp, photo_desc = gen_sift_features(photo_gray)
     logging.info(
-        "Photo: {photo_name} descriptors: {desc}".format(photo_name=os.path.basename(photo1_path), desc=photo_desc))
+        "Photo: {photo_name} example descriptor: {desc}".format(photo_name=os.path.basename(photo1_path), desc=photo_desc[0]))
     show_sift_features(photo_gray, photo, photo_kp)
     # plt.show()
     return photo, photo_kp, photo_desc
@@ -76,6 +76,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
     # important: write file path in double-quotes!
+    # ToDO: change paths!
     photo1_path = "/home/monikas/Desktop/studia/SNR/SET_B/0368/00f163e3707840d1a1a5f2c93be77d16.jpg"
     # photo2_path = "/home/monikas/Desktop/studia/SNR/SET_B/0373/51056747963b4b27a10b7fcd2c79a135.jpg"
     photo2_path = "/home/monikas/Desktop/studia/SNR/SET_B/0368/1bb20a82e4b648d1908007e512c3455a.jpg"
