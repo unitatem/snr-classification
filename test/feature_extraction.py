@@ -1,10 +1,13 @@
+import warnings
+
+import bow as bow
 import cv2
 import logging
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
-
+from sklearn.cluster import MiniBatchKMeans
 
 logging.getLogger("snr")
 
@@ -70,6 +73,31 @@ def show_sift_extracted(photo_path):
     show_sift_features(photo_gray, photo, photo_kp)
     # plt.show()
     return photo, photo_kp, photo_desc
+
+
+# ToDO: srun cluster_and_split for all descriptors
+# # generate indexes for train/test/val split
+# training_idxs, test_idxs, val_idxs = search.bow.train_test_val_split_idxs(
+#     total_rows=len(img_descs),
+#     percent_test=0.15,
+#     percent_val=0.15
+# )
+def cluster_and_split(img_descs, y, training_idxs, test_idxs, val_idxs, K):
+    """Cluster into K clusters, then split into train/test/val"""
+    # MiniBatchKMeans annoyingly throws tons of deprecation warnings that fill up the notebook. Ignore them.
+    warnings.filterwarnings('ignore')
+
+    X, cluster_model = bow.cluster_features(
+        img_descs,
+        training_idxs=training_idxs,
+        cluster_model=MiniBatchKMeans(n_clusters=K)
+    )
+
+    warnings.filterwarnings('default')
+
+    X_train, X_test, X_val, y_train, y_test, y_val = bow.perform_data_split(X, y, training_idxs, test_idxs, val_idxs)
+
+    return X_train, X_test, X_val, y_train, y_test, y_val, cluster_model
 
 
 if __name__ == "__main__":
