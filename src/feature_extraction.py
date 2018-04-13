@@ -1,11 +1,12 @@
-import src.config as conf
-import cv2
-from klepto.archives import dir_archive
 import logging
-import matplotlib.pyplot as plt
 import os
 
-logging.getLogger("feature_extraction")
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+from klepto.archives import dir_archive
+
+from src import config
 
 
 def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_N_match):
@@ -54,7 +55,8 @@ def execute_sift_extraction(photo_path, bounding_box, with_colour=1):
     """
     logging.info("Starting extraction for photo: {photo_name}".format(photo_name=photo_path))
     photo = cv2.imread(photo_path, with_colour)
-    photo_cropped = photo[bounding_box.y0:bounding_box.y0 + bounding_box.dy, bounding_box.x0:bounding_box.x0 + bounding_box.dx]
+    photo_cropped = photo[bounding_box.y0:bounding_box.y0 + bounding_box.dy,
+                    bounding_box.x0:bounding_box.x0 + bounding_box.dx]
     photo_kp, photo_desc = gen_sift_features(photo_cropped)
     return photo_cropped, photo_kp, photo_desc
 
@@ -90,6 +92,7 @@ class BoundingBox(object):
     """
     keeps coordinates of left upper corner and dimensions of bounding box
     """
+
     def __init__(self, string_list):
         """
 
@@ -118,25 +121,25 @@ def get_bounding_boxes(file_path):
 if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
 
-    bounding_boxes = get_bounding_boxes(conf.bounding_boxes_path)
+    bounding_boxes = get_bounding_boxes(config.bounding_boxes_path)
 
-    features_db = dir_archive(conf.features_db_path, {}, serialized=True, cached=False)
-    for class_name in next(os.walk(conf.set_path))[1]:
+    features_db = dir_archive(config.features_db_path, {}, serialized=True, cached=False)
+    for class_name in next(os.walk(config.set_path))[1]:
         features_db[class_name] = []
 
     logging.info("Starting extraction")
-    for class_path in generate_subdir_path(conf.set_path):
+    for class_path in generate_subdir_path(config.set_path):
         print(class_path)
-        class_descriptors = []
+        class_descriptors = np.array([], dtype=np.float32)
+        class_descriptors.shape = (0, 128)
         for photo_path, file_name in generate_file_path(class_path):
             # removes file extension
             bb = bounding_boxes[file_name.split(".")[0]]
             photo1, photo1_kp, photo1_desc = execute_sift_extraction(photo_path, bb, 1)
-            class_descriptors.append(photo1_desc)
+            class_descriptors = np.concatenate((class_descriptors, photo1_desc))
         features_db[os.path.basename(os.path.normpath(class_path))] = class_descriptors
     logging.info("Extraction finished")
 
     # del db
     # db = dir_archive('extracted_features.db', {}, serialized=True)
     # db.load()
-
