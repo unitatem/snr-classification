@@ -4,3 +4,8 @@
 # PyCharm
 .idea
 
+# Project
+debug
+resources
+*.log
+
