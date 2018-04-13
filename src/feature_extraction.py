@@ -1,46 +1,13 @@
-import warnings
-
-# import bow as bow
 import cv2
+from klepto.archives import dir_archive
 import logging
 import matplotlib.pyplot as plt
-import os.path
-from sklearn.cluster import MiniBatchKMeans
+import os
 
-logging.getLogger("snr")
-
-
-def to_gray(color_img):
-    """
-
-    :param color_img:  image read by cv2
-    :return: image converted to grayscale
-    """
-    gray = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
-    return gray
+logging.getLogger("feature_extraction")
 
 
-def gen_sift_features(gray_img):
-    """
-
-    :param gray_img: grayscale image
-    :return: keypoints, SIFT descriptors
-    """
-    sift = cv2.xfeatures2d.SIFT_create()
-    # kp is the keypoints
-    #
-    # desc is the SIFT descriptors, they're 128-dimensional vectors
-    # that we can use for our final features
-    kp, desc = sift.detectAndCompute(gray_img, None)
-    return kp, desc
-
-
-def show_sift_features(gray_img, color_img, kp):
-    logging.debug("inside show sift features")
-    return plt.imshow(cv2.drawKeypoints(gray_img, kp, color_img.copy()))
-
-
-def match_2_sift_photos(photo1, photo1_desc, photo1_kp, photo2, photo2_desc, photo2_kp, top_N_match):
+def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_N_match):
     # create a BFMatcher object which will match up the SIFT features
     bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
 
@@ -61,57 +28,82 @@ def match_2_sift_photos(photo1, photo1_desc, photo1_kp, photo2, photo2_desc, pho
     plt.show()
 
 
-def show_sift_extracted(photo_path):
-    photo = cv2.imread(photo_path)
-    photo_gray = to_gray(photo)
-    photo_kp, photo_desc = gen_sift_features(photo_gray)
-    logging.info(
-        "Photo: {photo_name} example descriptor: {desc}".format(photo_name=os.path.basename(photo1_path), desc=photo_desc[0]))
-    show_sift_features(photo_gray, photo, photo_kp)
-    # plt.show()
+def gen_sift_features(img):
+    """
+
+    :param img: image
+    :return: keypoints, SIFT descriptors
+    """
+    sift = cv2.xfeatures2d.SIFT_create()
+    # kp is the keypoints
+    #
+    # desc is the SIFT descriptors, they're 128-dimensional vectors
+    # that we can use for our final features
+    kp, desc = sift.detectAndCompute(img, None)
+    return kp, desc
+
+
+def execute_sift_extraction(photo_path, with_colour=1):
+    """
+
+    :param photo_path: self explanatory
+    :param with_colour: set 1 if request RGB image or set 0 if request gray_scale image
+    :return: photo, keypoints, SIFT_descriptors
+    """
+    logging.info("Starting extraction for photo: {photo_name}".format(photo_name=photo_path))
+    photo = cv2.imread(photo_path, with_colour)
+    photo_kp, photo_desc = gen_sift_features(photo)
     return photo, photo_kp, photo_desc
 
 
-# ToDO: srun cluster_and_split for all descriptors
-# # generate indexes for train/test/val split
-# training_idxs, test_idxs, val_idxs = search.bow.train_test_val_split_idxs(
-#     total_rows=len(img_descs),
-#     percent_test=0.15,
-#     percent_val=0.15
-# )
-def cluster_and_split(img_descs, y, training_idxs, test_idxs, val_idxs, K):
-    """Cluster into K clusters, then split into train/test/val"""
-    # MiniBatchKMeans annoyingly throws tons of deprecation warnings that fill up the notebook. Ignore them.
-    warnings.filterwarnings('ignore')
+def generate_subdir_path(dir_path):
+    """
+    generates path to subdirectories in selected directory
+    :param dir_path: directory path
+    :return: path to subdir
+    """
+    # os.walk is a generator -> next gives first tuple -> second element is list of all subdir
+    subdirs = next(os.walk(dir_path))[1]
+    for subdir in subdirs:
+        if subdir == ".directory":
+            continue
+        yield dir_path + subdir + '/'
 
-    X, cluster_model = bow.cluster_features(
-        img_descs,
-        training_idxs=training_idxs,
-        cluster_model=MiniBatchKMeans(n_clusters=K)
-    )
 
-    warnings.filterwarnings('default')
-
-    X_train, X_test, X_val, y_train, y_test, y_val = bow.perform_data_split(X, y, training_idxs, test_idxs, val_idxs)
-
-    return X_train, X_test, X_val, y_train, y_test, y_val, cluster_model
+def generate_file_path(dir_path):
+    """
+    generates paths to photos in selected directory
+    :param set_path: important: write file path in double-quotes
+    :return: path to photo and class name
+    """
+    files = next(os.walk(dir_path))[2]
+    for file in files:
+        if file == ".directory":
+            continue
+        yield (dir_path + file), os.path.basename(os.path.normpath(dir_path))
 
 
 if __name__ == "__main__":
-
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
-    # important: write file path in double-quotes!
-    # ToDO: change paths!
-    photo1_path = "../resources/SET_B/0368/00f163e3707840d1a1a5f2c93be77d16.jpg"
-    # photo2_path = "../resources/SET_B/0373/51056747963b4b27a10b7fcd2c79a135.jpg"
-    photo2_path = "../resources/SET_B/0368/1bb20a82e4b648d1908007e512c3455a.jpg"
+    resources_path = "../resources/"
+    set_path = resources_path + "SET_B/"
 
-    photo1, photo1_kp, photo1_desc = show_sift_extracted(photo1_path)
-    photo2, photo2_kp, photo2_desc = show_sift_extracted(photo2_path)
+    features_db = dir_archive(resources_path + "extracted_features.db", {}, serialized=True, cached=False)
 
-    top_N_features_matched = 10
-    match_2_sift_photos(photo1, photo1_desc, photo1_kp, photo2, photo2_desc, photo2_kp, top_N_features_matched)
+    for class_name in next(os.walk(set_path))[1]:
+        features_db[class_name] = []
 
+    logging.info("Starting extraction")
+    for class_path in generate_subdir_path(set_path):
+        print(class_path)
+        class_descriptors = []
+        for photo_path, class_name in generate_file_path(class_path):
+            photo1, photo1_kp, photo1_desc = execute_sift_extraction(photo_path, 1)
+            class_descriptors.append(photo1_desc)
+        features_db[os.path.basename(os.path.normpath(class_path))] = class_descriptors
+    logging.info("Extraction finished")
 
-
+    # del db
+    # db = dir_archive('extracted_features.db', {}, serialized=True)
+    # db.load()
 
