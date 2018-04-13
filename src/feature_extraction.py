@@ -1,3 +1,4 @@
+import src.config as conf
 import cv2
 from klepto.archives import dir_archive
 import logging
@@ -43,17 +44,19 @@ def gen_sift_features(img):
     return kp, desc
 
 
-def execute_sift_extraction(photo_path, with_colour=1):
+def execute_sift_extraction(photo_path, bounding_box, with_colour=1):
     """
 
     :param photo_path: self explanatory
+    :param bounding_box: bounding box object
     :param with_colour: set 1 if request RGB image or set 0 if request gray_scale image
     :return: photo, keypoints, SIFT_descriptors
     """
     logging.info("Starting extraction for photo: {photo_name}".format(photo_name=photo_path))
     photo = cv2.imread(photo_path, with_colour)
-    photo_kp, photo_desc = gen_sift_features(photo)
-    return photo, photo_kp, photo_desc
+    photo_cropped = photo[bounding_box.y0:bounding_box.y0 + bounding_box.dy, bounding_box.x0:bounding_box.x0 + bounding_box.dx]
+    photo_kp, photo_desc = gen_sift_features(photo_cropped)
+    return photo_cropped, photo_kp, photo_desc
 
 
 def generate_subdir_path(dir_path):
@@ -63,42 +66,72 @@ def generate_subdir_path(dir_path):
     :return: path to subdir
     """
     # os.walk is a generator -> next gives first tuple -> second element is list of all subdir
-    subdirs = next(os.walk(dir_path))[1]
-    for subdir in subdirs:
-        if subdir == ".directory":
+    sub_dirs = next(os.walk(dir_path))[1]
+    for sub_dir in sub_dirs:
+        if sub_dir == ".directory":
             continue
-        yield dir_path + subdir + '/'
+        yield dir_path + sub_dir + '/'
 
 
 def generate_file_path(dir_path):
     """
-    generates paths to photos in selected directory
-    :param set_path: important: write file path in double-quotes
-    :return: path to photo and class name
+    generates paths to files in selected directory
+    :param dir_path: directory path
+    :return: path to file and file name
     """
     files = next(os.walk(dir_path))[2]
     for file in files:
         if file == ".directory":
             continue
-        yield (dir_path + file), os.path.basename(os.path.normpath(dir_path))
+        yield (dir_path + file), file
+
+
+class BoundingBox(object):
+    """
+    keeps coordinates of left upper corner and dimensions of bounding box
+    """
+    def __init__(self, string_list):
+        """
+
+        :param string_list: construct BoundingBox from list of strings containing coordinates of left upper corner
+        and dimensions of boudning box
+        """
+        self.x0, self.y0, self.dx, self.dy = map(int, string_list)
+
+
+def get_bounding_boxes(file_path):
+    """
+
+    :param file_path: path to file containing data
+    :return: dictionary of bounding boxes with key as image name
+    """
+    logging.info("Loading bounding boxes")
+    bounding_boxes = dict()
+    with open(file_path) as file:
+        for raw_line in file.readlines():
+            tokens = raw_line.strip().split(' ')
+            hash = tokens[0].replace("-", "")
+            bounding_boxes[hash] = BoundingBox(tokens[1:])
+    return bounding_boxes
 
 
 if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
-    resources_path = "../resources/"
-    set_path = resources_path + "SET_B/"
 
-    features_db = dir_archive(resources_path + "extracted_features.db", {}, serialized=True, cached=False)
+    bounding_boxes = get_bounding_boxes(conf.bounding_boxes_path)
 
-    for class_name in next(os.walk(set_path))[1]:
+    features_db = dir_archive(conf.features_db_path, {}, serialized=True, cached=False)
+    for class_name in next(os.walk(conf.set_path))[1]:
         features_db[class_name] = []
 
     logging.info("Starting extraction")
-    for class_path in generate_subdir_path(set_path):
+    for class_path in generate_subdir_path(conf.set_path):
         print(class_path)
         class_descriptors = []
-        for photo_path, class_name in generate_file_path(class_path):
-            photo1, photo1_kp, photo1_desc = execute_sift_extraction(photo_path, 1)
+        for photo_path, file_name in generate_file_path(class_path):
+            # removes file extension
+            bb = bounding_boxes[file_name.split(".")[0]]
+            photo1, photo1_kp, photo1_desc = execute_sift_extraction(photo_path, bb, 1)
             class_descriptors.append(photo1_desc)
         features_db[os.path.basename(os.path.normpath(class_path))] = class_descriptors
     logging.info("Extraction finished")
