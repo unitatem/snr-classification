@@ -1,6 +1,8 @@
+import h5py
 import logging
-
 import numpy as np
+
+
 from klepto.archives import dir_archive
 from sklearn.cluster import KMeans
 
@@ -8,7 +10,6 @@ from src import config
 
 
 def load_database(db_path):
-    logging.info("Loading data")
     features_db = dir_archive(db_path, {}, serialized=True, cached=True)
     features_db.load()
     return features_db
@@ -37,6 +38,39 @@ def find_clusters(data, clusters_count):
     return kmeans
 
 
+def clusterize_data(features_db):
+    cluster_db_file = h5py.File(config.clusters_db_path_h5py, "w")
+    # cluster_db = dir_archive(config.clusters_db_path, {}, serialized=True, cached=False)
+    for class_name in features_db:
+        print(class_name)
+        grp = cluster_db_file.create_group(class_name)
+        # cluster_batch = {}
+        for photo_name in features_db[class_name]:
+            # zamienia deskryptory na labelki z k-means
+            labels = kmeans.predict(features_db[class_name][photo_name])
+
+        #     cluster_batch[photo_name] = np.zeros(shape=config.clusters_count, dtype=np.int16)
+        #     cluster_batch[photo_name] = (np.bincount(labels))
+        # cluster_db[class_name] = cluster_batch
+        #     bins = np.zeros(shape=config.clusters_count, dtype=np.int16)
+            bins = (np.bincount(labels))
+            print("BINS: ", bins)
+            grp.create_dataset(photo_name, data=bins)
+    cluster_db_file.close()
+        # cluster_db[class_name] = cluster_batch
+
+
+def generate_labels(cluster_db):
+    # ToDo: to be tested
+    labels_file = h5py.File(config.labels_db_path, "w")
+    labels_db = []
+    for class_name in cluster_db:
+        for photo_name in cluster_db[class_name]:
+            labels_db.append(class_name)
+    labels_file.create_dataset("labels", data=labels_db)
+    labels_file.close()
+
+
 if __name__ == "__main__":
     logging.basicConfig(filename="clusters.log", level=logging.DEBUG)
 
@@ -47,18 +81,8 @@ if __name__ == "__main__":
     print("kMeans running")
     kmeans = find_clusters(data, config.clusters_count)
 
-    # print("centers:")
-    # print(kmeans.cluster_centers_)
-
     print("Changing space from features into clusters")
-    cluster_db = dir_archive(config.clusters_db_path, {}, serialized=True, cached=False)
-    for class_name in features_db:
-        print(class_name)
-        cluster_batch = {}
-        for photo_name in features_db[class_name]:
-            labels = kmeans.predict(features_db[class_name][photo_name])
+    clusterize_data(features_db)
 
-            cluster_batch[photo_name] = np.zeros(shape=config.clusters_count, dtype=np.int16)
-            for label in labels:
-                cluster_batch[photo_name][label] += 1
-        cluster_db[class_name] = cluster_batch
+    # print(cluster_db)
+
