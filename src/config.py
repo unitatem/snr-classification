@@ -1,4 +1,5 @@
 take_every_nth_sample = 4
+clusters_count = 10
 
 resources_path = "../resources/"
 

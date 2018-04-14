@@ -7,6 +7,20 @@ from sklearn.cluster import KMeans
 from src import config
 
 
+def load_database(db_path):
+    features_db = dir_archive(db_path, {}, serialized=True, cached=True)
+    features_db.load()
+    return features_db
+
+
+def concatenate_data(original):
+    data = np.array([], dtype=np.float32)
+    data.shape = (0, 128)
+    for batch in features_db:
+        data = np.concatenate((data, features_db[batch]))
+    return data
+
+
 def find_clusters(data, clusters_count):
     """
     find data clusters
@@ -23,15 +37,9 @@ def find_clusters(data, clusters_count):
 if __name__ == "__main__":
     logging.basicConfig(filename="clusters.log", level=logging.DEBUG)
 
-    features_db = dir_archive(config.features_db_path, {}, serialized=True, cached=True)
-    features_db.load()
-
-    data = np.array([], dtype=np.float32)
-    data.shape = (0, 128)
-    for batch in features_db:
-        data = np.concatenate((data, features_db[batch]))
-
-    kmeans = find_clusters(data, 3)
+    features_db = load_database(config.features_db_path)
+    data = concatenate_data(features_db)
+    kmeans = find_clusters(data, config.clusters_count)
 
     # print("labels:")
     # print(kmeans.labels_)
