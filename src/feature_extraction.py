@@ -1,12 +1,13 @@
+import cv2
 import logging
+import matplotlib.pyplot as plt
 import os
 
-import cv2
-import matplotlib.pyplot as plt
-import numpy as np
-from klepto.archives import dir_archive
 
+from .bounding_box import BoundingBox
+from klepto.archives import dir_archive
 from src import config
+
 
 
 def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_N_match):
@@ -86,20 +87,6 @@ def generate_file_path(dir_path):
         if file == ".directory":
             continue
         yield (dir_path + file), file
-
-
-class BoundingBox(object):
-    """
-    keeps coordinates of left upper corner and dimensions of bounding box
-    """
-
-    def __init__(self, string_list):
-        """
-
-        :param string_list: construct BoundingBox from list of strings containing coordinates of left upper corner
-        and dimensions of boudning box
-        """
-        self.x0, self.y0, self.dx, self.dy = map(int, string_list)
 
 
 def get_bounding_boxes(file_path):
