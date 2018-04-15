@@ -40,49 +40,67 @@ def find_clusters(data, clusters_count):
 
 def clusterize_data(features_db):
     cluster_db_file = h5py.File(config.clusters_db_path_h5py, "w")
-    # cluster_db = dir_archive(config.clusters_db_path, {}, serialized=True, cached=False)
     for class_name in features_db:
         print(class_name)
         grp = cluster_db_file.create_group(class_name)
-        # cluster_batch = {}
         for photo_name in features_db[class_name]:
-            # zamienia deskryptory na labelki z k-means
+            # descriptors changed to labels from k-means
             labels = kmeans.predict(features_db[class_name][photo_name])
-
-        #     cluster_batch[photo_name] = np.zeros(shape=config.clusters_count, dtype=np.int16)
-        #     cluster_batch[photo_name] = (np.bincount(labels))
-        # cluster_db[class_name] = cluster_batch
-        #     bins = np.zeros(shape=config.clusters_count, dtype=np.int16)
             bins = (np.bincount(labels))
             print("BINS: ", bins)
             grp.create_dataset(photo_name, data=bins)
     cluster_db_file.close()
-        # cluster_db[class_name] = cluster_batch
 
 
-def generate_labels(cluster_db):
-    # ToDo: to be tested
-    labels_file = h5py.File(config.labels_db_path, "w")
-    labels_db = []
-    for class_name in cluster_db:
-        for photo_name in cluster_db[class_name]:
-            labels_db.append(class_name)
+def calculate_labels_dim(h5_file):
+    """
+    :param h5_file: hdf5 file as python dict
+    :return: np. ndarray containing number of entries for each class
+    """
+    dim = np.ndarray(len(h5_file))
+    for i,class_name in enumerate(h5_file.keys()):
+        dim[i] = len(h5_file[class_name])
+    return dim
+
+
+def generate_labels():
+    """
+
+    :return: creates hdf5 file containing labels, prepared for the input of the multilayer percpetron
+    """
+    cluster_db_file = h5py.File(config.clusters_db_path_h5py, "r")
+    cluster_db_file = dict(cluster_db_file)
+    labels_nr = calculate_labels_dim(cluster_db_file)
+    # cluster_db_file.keys(): class folders
+    # To retrieve the data with binned photo descriptors: np.array(file['0397']['1d7319df80044e29a04fa9b8c6456726'])
+    labels_db = np.ndarray(int(labels_nr.sum()))
+    labels_idx = np.cumsum(labels_nr)
+    labels_idx = labels_idx.astype(int)
+    file_keys = list(cluster_db_file.keys())
+    for i, high_idx in enumerate(labels_idx):
+        print(str(cluster_db_file[file_keys[i]].name)[2:])
+        low_index = 0
+        if i != 0:
+            low_index = labels_idx[i-1]
+        labels_db[low_index:high_idx] = str(cluster_db_file[file_keys[i]].name)[2:]
+    labels_file = h5py.File(config.labels_db_path_h5py, "w")
     labels_file.create_dataset("labels", data=labels_db)
     labels_file.close()
+    logging.info("Labels generation finished.")
 
 
 if __name__ == "__main__":
     logging.basicConfig(filename="clusters.log", level=logging.DEBUG)
 
-    print("Loading data")
+    logging.debug("Loading data")
     features_db = load_database(config.features_db_path)
-    print("Concatenating data")
+    logging.debug("Concatenating data")
     data = concatenate_data(features_db)
-    print("kMeans running")
+    logging.debug("kMeans running")
     kmeans = find_clusters(data, config.clusters_count)
 
-    print("Changing space from features into clusters")
+    logging.debug("Changing space from features into clusters")
     clusterize_data(features_db)
 
-    # print(cluster_db)
-
+    logging.debug("Generating labels...")
+    generate_labels()

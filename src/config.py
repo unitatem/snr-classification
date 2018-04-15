@@ -6,7 +6,11 @@ resources_path = "../resources/"
 set_path = resources_path + "SET_B/"
 bounding_boxes_path = resources_path + "bounding_boxes.txt"
 
+perceptron_input_path = resources_path + "perceptron_input/"
+
 features_db_path = resources_path + "extracted_features_" + str(take_every_nth_sample) + ".db"
 clusters_db_path = resources_path + "clusters_" + str(take_every_nth_sample) + "_" + str(clusters_count) + ".db"
-labels_db_path_h5py = resources_path + "labels_" + str(take_every_nth_sample) + "_" + str(clusters_count) + ".hdf5"
-clusters_db_path_h5py = resources_path + "clusters_" + str(take_every_nth_sample) + "_" + str(clusters_count) + ".hdf5"
+
+clusters_db_path_h5py = perceptron_input_path + "clusters_" + str(take_every_nth_sample) + "_" + str(clusters_count) + ".hdf5"
+labels_db_path_h5py = perceptron_input_path + "labels_" + str(take_every_nth_sample) + "_" + str(clusters_count) + ".hdf5"
+
