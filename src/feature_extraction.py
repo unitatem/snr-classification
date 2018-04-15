@@ -1,10 +1,10 @@
 import cv2
+import h5py
 import logging
 import matplotlib.pyplot as plt
 import os
 
-from .bounding_box import BoundingBox
-from klepto.archives import dir_archive
+from src.bounding_box import BoundingBox
 from src import config
 
 
@@ -106,25 +106,22 @@ def get_bounding_boxes(file_path):
 if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
 
+    features_db = h5py.File(config.features_db_path, "w")
     bounding_boxes = get_bounding_boxes(config.bounding_boxes_path)
-
-    features_db = dir_archive(config.features_db_path, {}, serialized=True, cached=False)
-    for class_name in next(os.walk(config.set_path))[1]:
-        features_db[class_name] = {}
 
     counter = 0
     logging.info("Starting extraction")
     for class_path in generate_subdir_path(config.set_path):
         print(class_path)
-        class_descriptors = {}
-        for photo_path, photo_name in generate_file_path(class_path):
+        class_descriptors = features_db.create_group(os.path.basename(os.path.normpath(class_path)))
+        for photo_path, photo_name in generate_file_path(class_path[2:]):
             counter += 1
             if counter % config.take_every_nth_sample != 0:
                 continue
             # removes file extension
             photo_name_hash = photo_name.split(".")[0]
             bb = bounding_boxes[photo_name_hash]
-            photo1, photo1_kp, photo1_desc = execute_sift_extraction(photo_path, bb, 1)
-            class_descriptors[photo_name_hash] = photo1_desc
-        features_db[os.path.basename(os.path.normpath(class_path))] = class_descriptors
+            photo, photo_kp, photo_desc = execute_sift_extraction(photo_path, bb, 1)
+            class_descriptors.create_dataset(photo_name_hash, data=photo_desc)
+    features_db.close()
     logging.info("Extraction finished")

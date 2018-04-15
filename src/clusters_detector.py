@@ -2,17 +2,14 @@ import h5py
 import logging
 import numpy as np
 
-
-from klepto.archives import dir_archive
 from sklearn.cluster import KMeans
 
 from src import config
 
 
 def load_database(db_path):
-    logging.debug("Loading data")
-    features_db = dir_archive(db_path, {}, serialized=True, cached=True)
-    features_db.load()
+    logging.info("Loading data {db}".format(db=db_path))
+    features_db = h5py.File(config.features_db_path, "r")
     return features_db
 
 
@@ -33,16 +30,15 @@ def find_clusters(data, clusters_count):
     :param clusters_count: required number of clusters
     :return: model containing clusters parameters
     """
-    logging.debug("kMeans running")
     logging.info("Finding clusters [{clusters_cnt}]".format(clusters_cnt=clusters_count))
     # fixed random_state for simpler and deterministic comparison between runs of algorithm
     kmeans = KMeans(n_clusters=clusters_count, random_state=0).fit(data)
     return kmeans
 
 
-def clusterize_data(features_db):
-    logging.debug("Changing space from features into clusters")
-    cluster_db_file = h5py.File(config.clusters_db_path_h5py, "w")
+def clusterize_data(features_db, kmeans):
+    logging.info("Changing space from features into clusters")
+    cluster_db_file = h5py.File(config.clusters_db_path, "w")
     for class_name in features_db:
         grp = cluster_db_file.create_group(class_name)
         for photo_name in features_db[class_name]:
@@ -69,8 +65,8 @@ def generate_labels():
 
     :return: creates hdf5 file containing labels, prepared for the input of the multilayer percpetron
     """
-    logging.debug("Generating labels...")
-    cluster_db_file = h5py.File(config.clusters_db_path_h5py, "r")
+    logging.info("Generating labels...")
+    cluster_db_file = h5py.File(config.clusters_db_path, "r")
     cluster_db_file = dict(cluster_db_file)
     labels_nr = calculate_labels_dim(cluster_db_file)
     # cluster_db_file.keys(): class folders
@@ -82,9 +78,9 @@ def generate_labels():
     for i, high_idx in enumerate(labels_idx):
         low_index = 0
         if i != 0:
-            low_index = labels_idx[i-1]
+            low_index = labels_idx[i - 1]
         labels_db[low_index:high_idx] = str(cluster_db_file[file_keys[i]].name)[2:]
-    labels_file = h5py.File(config.labels_db_path_h5py, "w")
+    labels_file = h5py.File(config.labels_db_path, "w")
     labels_file.create_dataset("labels", data=labels_db)
     labels_file.close()
     logging.info("Labels generation finished.")
@@ -96,7 +92,5 @@ if __name__ == "__main__":
     features_db = load_database(config.features_db_path)
     data = concatenate_data(features_db)
     kmeans = find_clusters(data, config.clusters_count)
-
-    clusterize_data(features_db)
-
+    clusterize_data(features_db, kmeans)
     generate_labels()
