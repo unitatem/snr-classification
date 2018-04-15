@@ -3,11 +3,9 @@ import logging
 import matplotlib.pyplot as plt
 import os
 
-
 from .bounding_box import BoundingBox
 from klepto.archives import dir_archive
 from src import config
-
 
 
 def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_N_match):
