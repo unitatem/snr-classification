@@ -1,6 +1,8 @@
 take_every_nth_sample = 4
 clusters_count = 8
 
+sizes_of_layers = [20]
+
 resources_path = "../resources/"
 
 set_path = resources_path + "SET_B/"
