@@ -1,5 +1,6 @@
 import logging
 import h5py
+import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from src import config
@@ -17,23 +18,24 @@ def build_perceptron():
         model.add(Activation('sigmoid'))
     cluster_db = h5py.File(config.clusters_db_path, 'r')
     output_size = len(cluster_db)
+    cluster_db.close()
     model.add(Dense(output_size))
     model.add(Activation('softmax'))
-    cluster_db.close()
+    model.compile(optimizer='rmsprop',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
     return model
 
 
-def divide_data(training_fraction):
+def create_hotbit_mapping():
     cluster_db = h5py.File(config.clusters_db_path, 'r')
-    data_ids = []
-    for class_name in cluster_db:
-        for photo_name in cluster_db[class_name]:
-            data_ids.append((class_name, photo_name))
+    class_names = list(cluster_db.keys())
+    sorted(class_names)
+    mapping = {}
+    for i, class_name in enumerate(class_names):
+        mapping[class_name] = i
     cluster_db.close()
-
-    shuffle(data_ids)
-    divide_point = int(len(data_ids)*training_fraction)
-    return data_ids[:divide_point], data_ids[divide_point:]
+    return mapping
 
 
 if __name__ == '__main__':
