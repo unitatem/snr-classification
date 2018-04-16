@@ -1,11 +1,10 @@
+import cv2
+import h5py
 import logging
+import matplotlib.pyplot as plt
 import os
 
-import cv2
-import matplotlib.pyplot as plt
-import numpy as np
-from klepto.archives import dir_archive
-
+from src.bounding_box import BoundingBox
 from src import config
 
 
@@ -88,20 +87,6 @@ def generate_file_path(dir_path):
         yield (dir_path + file), file
 
 
-class BoundingBox(object):
-    """
-    keeps coordinates of left upper corner and dimensions of bounding box
-    """
-
-    def __init__(self, string_list):
-        """
-
-        :param string_list: construct BoundingBox from list of strings containing coordinates of left upper corner
-        and dimensions of boudning box
-        """
-        self.x0, self.y0, self.dx, self.dy = map(int, string_list)
-
-
 def get_bounding_boxes(file_path):
     """
 
@@ -121,17 +106,14 @@ def get_bounding_boxes(file_path):
 if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
 
+    features_db = h5py.File(config.features_db_path, "w")
     bounding_boxes = get_bounding_boxes(config.bounding_boxes_path)
-
-    features_db = dir_archive(config.features_db_path, {}, serialized=True, cached=False)
-    for class_name in next(os.walk(config.set_path))[1]:
-        features_db[class_name] = {}
 
     counter = 0
     logging.info("Starting extraction")
     for class_path in generate_subdir_path(config.set_path):
         print(class_path)
-        class_descriptors = {}
+        class_descriptors = features_db.create_group(os.path.basename(os.path.normpath(class_path)))
         for photo_path, photo_name in generate_file_path(class_path):
             counter += 1
             if counter % config.take_every_nth_sample != 0:
@@ -139,7 +121,7 @@ if __name__ == "__main__":
             # removes file extension
             photo_name_hash = photo_name.split(".")[0]
             bb = bounding_boxes[photo_name_hash]
-            photo1, photo1_kp, photo1_desc = execute_sift_extraction(photo_path, bb, 1)
-            class_descriptors[photo_name_hash] = photo1_desc
-        features_db[os.path.basename(os.path.normpath(class_path))] = class_descriptors
+            photo, photo_kp, photo_desc = execute_sift_extraction(photo_path, bb, 1)
+            class_descriptors.create_dataset(photo_name_hash, data=photo_desc)
+    features_db.close()
     logging.info("Extraction finished")
