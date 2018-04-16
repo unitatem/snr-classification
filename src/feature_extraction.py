@@ -114,7 +114,7 @@ if __name__ == "__main__":
     for class_path in generate_subdir_path(config.set_path):
         print(class_path)
         class_descriptors = features_db.create_group(os.path.basename(os.path.normpath(class_path)))
-        for photo_path, photo_name in generate_file_path(class_path[2:]):
+        for photo_path, photo_name in generate_file_path(class_path):
             counter += 1
             if counter % config.take_every_nth_sample != 0:
                 continue

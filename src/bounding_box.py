@@ -7,6 +7,6 @@ class BoundingBox(object):
         """
 
         :param string_list: construct BoundingBox from list of strings containing coordinates of left upper corner
-        and dimensions of boudning box
+        and dimensions of bounding box
         """
         self.x0, self.y0, self.dx, self.dy = map(int, string_list)

@@ -13,7 +13,7 @@ def load_database(db_path):
     return features_db
 
 
-def concatenate_data(original):
+def concatenate_data(features_db):
     logging.info("Concatenating data")
     data = np.array([], dtype=np.float32)
     data.shape = (0, 128)
@@ -63,26 +63,27 @@ def calculate_labels_dim(h5_file):
 def generate_labels():
     """
 
-    :return: creates hdf5 file containing labels, prepared for the input of the multilayer percpetron
+    :return: creates hdf5 file containing labels, prepared for the input of the multilayer perceptron
     """
     logging.info("Generating labels...")
-    cluster_db_file = h5py.File(config.clusters_db_path, "r")
-    cluster_db_file = dict(cluster_db_file)
-    labels_nr = calculate_labels_dim(cluster_db_file)
+    cluster_db = h5py.File(config.clusters_db_path, "r")
+    labels_dim = calculate_labels_dim(cluster_db)
     # cluster_db_file.keys(): class folders
     # To retrieve the data with binned photo descriptors: np.array(file['0397']['1d7319df80044e29a04fa9b8c6456726'])
-    labels_db = np.empty(shape=int(labels_nr.sum()))
-    labels_idx = np.cumsum(labels_nr)
+    labels = np.empty(shape=int(labels_dim.sum()), dtype='S5')
+    labels_idx = np.cumsum(labels_dim)
     labels_idx = labels_idx.astype(int)
-    file_keys = list(cluster_db_file.keys())
+    file_keys = list(cluster_db.keys())
     for i, high_idx in enumerate(labels_idx):
         low_index = 0
         if i != 0:
             low_index = labels_idx[i - 1]
-        labels_db[low_index:high_idx] = str(cluster_db_file[file_keys[i]].name)[2:]
-    labels_file = h5py.File(config.labels_db_path, "w")
-    labels_file.create_dataset("labels", data=labels_db)
-    labels_file.close()
+        labels[low_index:high_idx] = cluster_db[file_keys[i]].name
+    cluster_db.close()
+
+    labels_db = h5py.File(config.labels_db_path, "w")
+    labels_db.create_dataset("labels", data=labels, dtype="S5")
+    labels_db.close()
     logging.info("Labels generation finished.")
 
 
@@ -93,4 +94,5 @@ if __name__ == "__main__":
     data = concatenate_data(features_db)
     kmeans = find_clusters(data, config.clusters_count)
     clusterize_data(features_db, kmeans)
+    features_db.close()
     generate_labels()
