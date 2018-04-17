@@ -44,7 +44,7 @@ def clusterize_data(features_db, kmeans):
         for photo_name in features_db[class_name]:
             # descriptors changed to labels from k-means
             labels = kmeans.predict(features_db[class_name][photo_name])
-            bins = np.bincount(labels)
+            bins = np.bincount(labels, minlength=config.clusters_count)
             grp.create_dataset(photo_name, data=bins)
     cluster_db_file.close()
 
