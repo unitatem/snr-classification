@@ -27,7 +27,7 @@ def build_perceptron():
     return model
 
 
-def create_hotbit_mapping():
+def create_class_mapping():
     cluster_db = h5py.File(config.clusters_db_path, 'r')
     class_names = list(cluster_db.keys())
     sorted(class_names)
