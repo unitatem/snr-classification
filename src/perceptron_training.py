@@ -1,10 +1,21 @@
 import logging
 import h5py
-import numpy as np
+from keras import metrics
+from src.sample_sequence import SampleSequence
+from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from src import config
 from random import shuffle
+import numpy as np
+
+
+def top_1_accuracy(y_true, y_pred):
+    return metrics.top_k_categorical_accuracy(y_true, y_pred, k=1)
+
+
+def top_5_accuracy(y_true, y_pred):
+    return metrics.top_k_categorical_accuracy(y_true, y_pred, k=5)
 
 
 def build_perceptron():
@@ -23,7 +34,9 @@ def build_perceptron():
     model.add(Activation('softmax'))
     model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
-                  metrics=['accuracy'])
+                  metrics=['accuracy',
+                           top_1_accuracy,
+                           top_5_accuracy])
     return model
 
 
@@ -46,15 +59,29 @@ def divide_data():
             sample_ids.append((class_name, photo_name))
     cluster_db.close()
     shuffle(sample_ids)
-    divide_points = (len(sample_ids) * config.training_fraction,
-                     len(sample_ids) * config.training_fraction + len(sample_ids) * config.test_fraction)
-    training_ids = sample_ids[:divide_points[0]]
-    test_ids = sample_ids[divide_points[0]:divide_points[1]]
-    validation_ids = sample_ids[divide_points[1]:]
+    divide_point = int(len(sample_ids) * config.training_fraction)
+    training_ids = sample_ids[:divide_point]
+    test_ids = sample_ids[divide_point:]
 
-    return training_ids, validation_ids, test_ids
+    return training_ids, test_ids
+
+
+def get_labels(sample_ids):
+    mapping = create_class_mapping()
+    labels = [mapping[sample_id[0]] for sample_id in sample_ids]
+    labels = to_categorical(labels, num_classes=len(mapping))
+    return labels
 
 
 if __name__ == '__main__':
     logging.basicConfig(filename='perceptron.log', level=logging.DEBUG)
+    training_ids, test_ids = divide_data()
+
+    training_gen = SampleSequence(training_ids, get_labels(training_ids), config.batch_size)
+    test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size)
+
     model = build_perceptron()
+    model.fit_generator(training_gen, validation_data=test_gen, epochs=config.epochs)
+
+    training_gen.close()
+    test_gen.close()
