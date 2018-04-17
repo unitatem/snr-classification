@@ -44,7 +44,7 @@ def clusterize_data(features_db, kmeans):
         for photo_name in features_db[class_name]:
             # descriptors changed to labels from k-means
             labels = kmeans.predict(features_db[class_name][photo_name])
-            bins = np.bincount(labels)
+            bins = np.bincount(labels, minlength=config.clusters_count)
             grp.create_dataset(photo_name, data=bins)
     cluster_db_file.close()
 
@@ -60,33 +60,6 @@ def calculate_labels_dim(h5_file):
     return dim
 
 
-def generate_labels():
-    """
-
-    :return: creates hdf5 file containing labels, prepared for the input of the multilayer perceptron
-    """
-    logging.info("Generating labels...")
-    cluster_db = h5py.File(config.clusters_db_path, "r")
-    labels_dim = calculate_labels_dim(cluster_db)
-    # cluster_db_file.keys(): class folders
-    # To retrieve the data with binned photo descriptors: np.array(file['0397']['1d7319df80044e29a04fa9b8c6456726'])
-    labels = np.empty(shape=int(labels_dim.sum()), dtype='S5')
-    labels_idx = np.cumsum(labels_dim)
-    labels_idx = labels_idx.astype(int)
-    file_keys = list(cluster_db.keys())
-    for i, high_idx in enumerate(labels_idx):
-        low_index = 0
-        if i != 0:
-            low_index = labels_idx[i - 1]
-        labels[low_index:high_idx] = cluster_db[file_keys[i]].name
-    cluster_db.close()
-
-    labels_db = h5py.File(config.labels_db_path, "w")
-    labels_db.create_dataset("labels", data=labels, dtype="S5")
-    labels_db.close()
-    logging.info("Labels generation finished.")
-
-
 if __name__ == "__main__":
     logging.basicConfig(filename="clusters.log", level=logging.DEBUG)
 
@@ -95,4 +68,3 @@ if __name__ == "__main__":
     kmeans = find_clusters(data, config.clusters_count)
     clusterize_data(features_db, kmeans)
     features_db.close()
-    generate_labels()
