@@ -8,4 +8,5 @@
 debug
 resources
 *.log
+__pycache__
 
