@@ -8,7 +8,6 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from src import config
 from random import shuffle
-import numpy as np
 
 
 def top_1_accuracy(y_true, y_pred):
@@ -43,11 +42,11 @@ def build_perceptron():
 def create_class_mapping():
     cluster_db = h5py.File(config.clusters_db_path, 'r')
     class_names = list(cluster_db.keys())
+    cluster_db.close()
     sorted(class_names)
     mapping = {}
     for i, class_name in enumerate(class_names):
         mapping[class_name] = i
-    cluster_db.close()
     return mapping
 
 
@@ -60,12 +59,12 @@ def divide_data():
         for photo_name in cluster_db[class_name]:
             class_ids.append((class_name, photo_name))
         shuffle(class_ids)
-        divide_point = int(len(class_ids) * config.training_fraction)
+        divide_point = int(len(class_ids) * config.training_total_ratio)
         training_ids += class_ids[:divide_point]
         test_ids += class_ids[divide_point:]
-        shuffle(training_ids)
-        shuffle(test_ids)
     cluster_db.close()
+    shuffle(training_ids)
+    shuffle(test_ids)
 
     return training_ids, test_ids
 
@@ -85,7 +84,7 @@ if __name__ == '__main__':
     test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size)
 
     model = build_perceptron()
-    callback = callbacks.EarlyStopping(min_delta=config.min_delta, patience=config.patience)
+    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required, patience=config.max_no_improvement_epochs)
     model.fit_generator(training_gen, validation_data=test_gen, epochs=config.epochs, callbacks=[callback])
 
     training_gen.close()

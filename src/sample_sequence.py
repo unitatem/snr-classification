@@ -11,13 +11,13 @@ class SampleSequence(utils.Sequence):
         self.cluster_db = h5py.File(config.clusters_db_path, 'r')
 
     def __len__(self):
-        return int(np.ceil(len(self.ids)) / float(self.batch_size))
+        return int(np.ceil(len(self.ids) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        batch_x = self.ids[idx * self.batch_size:(idx + 1) * self.batch_size]
+        batch_ids = self.ids[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.classes[idx * self.batch_size:(idx + 1) * self.batch_size]
 
-        batch_x = [self.cluster_db[x[0]][x[1]] for x in batch_x]
+        batch_x = [self.cluster_db[x[0]][x[1]] for x in batch_ids]
         return np.array(batch_x), np.array(batch_y)
 
     def close(self):
