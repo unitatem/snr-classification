@@ -1,6 +1,7 @@
 import logging
 import h5py
 from keras import metrics
+from keras import callbacks
 from src.sample_sequence import SampleSequence
 from keras.utils import to_categorical
 from keras.models import Sequential
@@ -62,6 +63,8 @@ def divide_data():
         divide_point = int(len(class_ids) * config.training_fraction)
         training_ids += class_ids[:divide_point]
         test_ids += class_ids[divide_point:]
+        shuffle(training_ids)
+        shuffle(test_ids)
     cluster_db.close()
 
     return training_ids, test_ids
@@ -82,7 +85,8 @@ if __name__ == '__main__':
     test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size)
 
     model = build_perceptron()
-    model.fit_generator(training_gen, validation_data=test_gen, epochs=config.epochs)
+    callback = callbacks.EarlyStopping(min_delta=config.min_delta, patience=config.patience)
+    model.fit_generator(training_gen, validation_data=test_gen, epochs=config.epochs, callbacks=[callback])
 
     training_gen.close()
     test_gen.close()

@@ -1,11 +1,12 @@
-take_every_nth_sample = 4
-clusters_count = 8
+take_every_nth_sample = 1
+clusters_count = 20
 
-sizes_of_layers = [10, 10, 10]
+sizes_of_layers = [100]
 training_fraction = 0.75
-# test_fraction = 0.2
 batch_size = 32
-epochs = 6
+epochs = 200
+min_delta = 0.01
+patience = 2
 
 resources_path = "../resources/"
 
