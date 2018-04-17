@@ -84,8 +84,9 @@ if __name__ == '__main__':
     test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size)
 
     model = build_perceptron()
-    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required, patience=config.max_no_improvement_epochs)
-    model.fit_generator(training_gen, validation_data=test_gen, epochs=config.epochs, callbacks=[callback])
+    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required, 
+                                       patience=config.max_no_improvement_epochs)
+    model.fit_generator(training_gen, validation_data=test_gen, epochs=config.max_epochs, callbacks=[callback])
 
     training_gen.close()
     test_gen.close()
