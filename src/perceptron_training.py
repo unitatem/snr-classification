@@ -1,13 +1,13 @@
 import logging
 import h5py
-from keras import metrics
 from keras import callbacks
-from src.sample_sequence import SampleSequence
-from keras.utils import to_categorical
-from keras.models import Sequential
+from keras import metrics
 from keras.layers import Dense, Activation
-from src import config
+from keras.models import Sequential
+from keras.utils import to_categorical
 from random import shuffle
+from src import config
+from src.sample_sequence import SampleSequence
 
 
 def top_1_accuracy(y_true, y_pred):
@@ -28,9 +28,9 @@ def build_perceptron():
             model.add(Dense(layer_size))
         model.add(Activation('sigmoid'))
     cluster_db = h5py.File(config.clusters_db_path, 'r')
-    output_size = len(cluster_db)
+    output_layer_size = len(cluster_db)
     cluster_db.close()
-    model.add(Dense(output_size))
+    model.add(Dense(output_layer_size))
     model.add(Activation('softmax'))
     model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
