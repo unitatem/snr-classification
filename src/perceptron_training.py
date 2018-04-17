@@ -34,8 +34,7 @@ def build_perceptron():
     model.add(Activation('softmax'))
     model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
-                  metrics=['accuracy',
-                           top_1_accuracy,
+                  metrics=[top_1_accuracy,
                            top_5_accuracy])
     return model
 
@@ -53,15 +52,17 @@ def create_class_mapping():
 
 def divide_data():
     cluster_db = h5py.File(config.clusters_db_path)
-    sample_ids = []
+    training_ids = []
+    test_ids = []
     for class_name in cluster_db:
+        class_ids = []
         for photo_name in cluster_db[class_name]:
-            sample_ids.append((class_name, photo_name))
+            class_ids.append((class_name, photo_name))
+        shuffle(class_ids)
+        divide_point = int(len(class_ids) * config.training_fraction)
+        training_ids += class_ids[:divide_point]
+        test_ids += class_ids[divide_point:]
     cluster_db.close()
-    shuffle(sample_ids)
-    divide_point = int(len(sample_ids) * config.training_fraction)
-    training_ids = sample_ids[:divide_point]
-    test_ids = sample_ids[divide_point:]
 
     return training_ids, test_ids
 
