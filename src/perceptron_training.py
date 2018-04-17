@@ -38,6 +38,23 @@ def create_class_mapping():
     return mapping
 
 
+def divide_data():
+    cluster_db = h5py.File(config.clusters_db_path)
+    sample_ids = []
+    for class_name in cluster_db:
+        for photo_name in cluster_db[class_name]:
+            sample_ids.append((class_name, photo_name))
+    cluster_db.close()
+    shuffle(sample_ids)
+    divide_points = (len(sample_ids) * config.training_fraction,
+                     len(sample_ids) * config.training_fraction + len(sample_ids) * config.test_fraction)
+    training_ids = sample_ids[:divide_points[0]]
+    test_ids = sample_ids[divide_points[0]:divide_points[1]]
+    validation_ids = sample_ids[divide_points[1]:]
+
+    return training_ids, validation_ids, test_ids
+
+
 if __name__ == '__main__':
     logging.basicConfig(filename='perceptron.log', level=logging.DEBUG)
     model = build_perceptron()

@@ -2,7 +2,8 @@ take_every_nth_sample = 4
 clusters_count = 8
 
 sizes_of_layers = [20]
-training_fraction = 0.75
+training_fraction = 0.6
+test_fraction = 0.2
 
 resources_path = "../resources/"
 
