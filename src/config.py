@@ -8,6 +8,8 @@ max_epochs = 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2
 
+activation_functions = ['softmax', 'tanh', 'relu', 'elu']
+
 resources_path = "../resources/"
 
 set_path = resources_path + "SET_B/"
