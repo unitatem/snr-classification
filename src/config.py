@@ -1,4 +1,4 @@
-take_every_nth_sample = 4
+take_every_nth_sample = 1
 
 # every range in config is both side closed <a, b>
 clusters_count_start = 8

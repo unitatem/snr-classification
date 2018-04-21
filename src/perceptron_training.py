@@ -1,5 +1,7 @@
-import logging
 import h5py
+import logging
+import numpy as np
+
 from keras import callbacks
 from keras import metrics
 from keras.callbacks import CSVLogger
@@ -12,14 +14,34 @@ from src.sample_sequence import SampleSequence
 
 
 def top_1_accuracy(y_true, y_pred):
+    """
+
+    :param y_true: original labels
+    :param y_pred: predicted labels
+    :return: top 1 keras metrics
+    """
     return metrics.top_k_categorical_accuracy(y_true, y_pred, k=1)
 
 
 def top_5_accuracy(y_true, y_pred):
+    """
+
+    :param y_true: original labels
+    :param y_pred: predicted labels
+    :return: top 5 keras metrics
+    """
     return metrics.top_k_categorical_accuracy(y_true, y_pred, k=5)
 
 
 def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
+    """
+
+    :param clusters_cnt:
+    :param layer_cnt:
+    :param size_of_layers:
+    :param activation: activation function
+    :return: perceptron model
+    """
     logging.info('Building perceptron: [{clusters_cnt} clusters_cnt, '
                  '{layer_cnt} layers, '
                  '{size_of_layers} neurons_in_every_layer, '
@@ -39,7 +61,7 @@ def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
     output_layer_size = len(cluster_db)
     cluster_db.close()
     model.add(Dense(output_layer_size))
-    model.add(Activation('softmax'))
+    model.add(Activation('tanh'))  # change activation functions
     model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
                   metrics=[top_1_accuracy,
@@ -48,6 +70,10 @@ def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
 
 
 def create_class_mapping(clusters_cnt):
+    """
+
+    :return: mapped classes into sequence of integers
+    """
     cluster_db = h5py.File(config.get_clusters_db_path('training', clusters_cnt), 'r')
     class_names = list(cluster_db.keys())
     cluster_db.close()
@@ -58,8 +84,6 @@ def create_class_mapping(clusters_cnt):
     return mapping
 
 
-
-    # cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt))
 def get_ids(cluster_db):
     ids = []
     for class_name in cluster_db:
@@ -70,6 +94,11 @@ def get_ids(cluster_db):
 
 
 def get_labels(sample_ids):
+    """
+
+    :param sample_ids: ids of selected samples from original whole dataset
+    :return: labels for the provided sample ids
+    """
     mapping = create_class_mapping(clusters_cnt)
     labels = [mapping[sample_id[0]] for sample_id in sample_ids]
     labels = to_categorical(labels, num_classes=len(mapping))

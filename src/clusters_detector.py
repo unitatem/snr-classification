@@ -8,6 +8,11 @@ from src import config
 
 
 def load_database(db_path):
+    """
+
+    :param db_path: the path of the file containig hdf5 data: features, clusters, data
+    :return:  h5py object of opened file: works as python dict
+    """
     logging.info("Loading data {db}".format(db=db_path))
     features_db = h5py.File(db_path, "r")
     return features_db
@@ -18,6 +23,11 @@ def calculate_basic_record_cnt(db):
 
 
 def concatenate_data(features_db):
+    """
+
+    :param features_db: h5py opened file containig extracted features data
+    :return: features data for all classes and photos from h4py file aggregated into np.array
+    """
     logging.info("Concatenating data")
     number_of_records = calculate_basic_record_cnt(features_db)
     data = np.empty(shape=(number_of_records, 128), dtype=np.float32)
@@ -44,6 +54,13 @@ def find_clusters(data, clusters_cnt):
 
 
 def clusterize_data_and_create_db(features_db, kmeans, clusters_db_path):
+    """
+
+    :param features_db: opened h5py file containing extracted features for the data that should be classified
+    :param kmeans: clusters created using k-means
+    :param clusters_db_path: path to created database
+    :return:
+    """
     logging.info("Changing space from features into [{clusters_db_path}]".format(clusters_db_path=clusters_db_path))
     cluster_db_file = h5py.File(clusters_db_path, "w")
     for class_name in features_db:

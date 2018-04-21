@@ -10,7 +10,18 @@ from src.bounding_box import BoundingBox
 from src import config
 
 
-def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_N_match):
+def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_n_match):
+    """
+
+    :param photo1: 1st photo
+    :param photo1_kp: 1st photo keypoints
+    :param photo1_desc: 1st photo descriptors
+    :param photo2: 2nd photo
+    :param photo2_kp: 2nd photo keypoints
+    :param photo2_desc: 2nd photo descriptors
+    :param top_n_match: number of top matched features that sould be visualized
+    :return:
+    """
     # create a BFMatcher object which will match up the SIFT features
     bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
 
@@ -24,7 +35,7 @@ def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo
     match_img = cv2.drawMatches(
         photo1, photo1_kp,
         photo2, photo2_kp,
-        matches[:top_N_match], photo2.copy(), flags=0)
+        matches[:top_n_match], photo2.copy(), flags=0)
 
     plt.figure(figsize=(12, 6))
     plt.imshow(match_img)
