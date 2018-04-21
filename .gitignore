@@ -8,6 +8,7 @@
 debug
 resources
 *.log
+*.csv
 __pycache__
 *.cprof
 

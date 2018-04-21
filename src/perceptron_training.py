@@ -2,6 +2,7 @@ import logging
 import h5py
 from keras import callbacks
 from keras import metrics
+from keras.callbacks import CSVLogger
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 from keras.utils import to_categorical
@@ -86,8 +87,8 @@ def get_labels(sample_ids):
 if __name__ == '__main__':
     logging.basicConfig(filename='perceptron.log', level=logging.DEBUG)
 
-    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
-                                       patience=config.max_no_improvement_epochs)
+    stop_callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
+                                            patience=config.max_no_improvement_epochs)
 
     for clusters_cnt in range(config.clusters_count_start, config.clusters_count_stop + 1, config.clusters_count_step):
         training_ids, test_ids = divide_data(clusters_cnt)
@@ -96,16 +97,20 @@ if __name__ == '__main__':
         for layer_cnt in range(config.layer_cnt_start, config.layer_cnt_stop + 1, config.layer_cnt_step):
             for layer_size in range(config.layer_size_start, config.layer_size_stop + 1, config.layer_size_step):
                 for activation in config.activation_functions:
+                    csv_logger = CSVLogger("perceptron_"
+                                           + str(clusters_cnt) + "_"
+                                           + str(layer_cnt) + "_"
+                                           + str(layer_size) + "_"
+                                           + activation + ".csv", append=True, separator=';')
+
                     model = build_perceptron(clusters_cnt, layer_cnt, layer_size, activation)
                     model.fit_generator(training_gen,
                                         validation_data=test_gen,
                                         epochs=config.max_epochs,
-                                        callbacks=[callback])
+                                        callbacks=[stop_callback, csv_logger])
                     # evaluate the model
                     scores = model.evaluate_generator(test_gen)
                     for i in range(len(scores)):
                         logging.info("{name}: {value}"
-                                      .format(name=model.metrics_names[i],
-                                              value=scores[i]))
-        training_gen.close()
-        test_gen.close()
+                                     .format(name=model.metrics_names[i],
+                                             value=scores[i]))

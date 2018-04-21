@@ -10,7 +10,7 @@ activation_functions = ['sigmoid', 'tanh']
 
 layer_cnt_start = 1
 layer_cnt_stop = 4
-layer_cnt_step = 4
+layer_cnt_step = 3
 
 layer_size_start = 50
 layer_size_stop = 100
