@@ -1,6 +1,5 @@
 import h5py
 import logging
-import numpy as np
 
 from keras import callbacks
 from keras import metrics
@@ -105,39 +104,51 @@ def get_labels(sample_ids):
     return labels
 
 
+def create_data_gens(clusters_cnt):
+    gens = {}
+    for group in config.data_type:
+        cluster_db = h5py.File(config.get_clusters_db_path(group, clusters_cnt), 'r')
+        ids = get_ids(cluster_db)
+        cluster_db.close()
+        gens[group] = SampleSequence(ids, get_labels(ids),
+                                     config.get_clusters_db_path(group, clusters_cnt), config.batch_size)
+    return gens
+
+
+def create_csv_logger(clusters_cnt, layer_cnt, layer_size, activation_fun):
+    return CSVLogger("perceptron_"
+                     + str(clusters_cnt) + "_"
+                     + str(layer_cnt) + "_"
+                     + str(layer_size) + "_"
+                     + activation_fun + ".csv", append=True, separator=';')
+
+
+def evaluate_model(model, test_data_gen):
+    scores = model.evaluate_generator(test_data_gen)
+    for i in range(len(scores)):
+        logging.info("{name}: {value}"
+                     .format(name=model.metrics_names[i],
+                             value=scores[i]))
+
+
 if __name__ == '__main__':
     logging.basicConfig(filename='perceptron.log', level=logging.DEBUG)
 
     stop_callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
                                             patience=config.max_no_improvement_epochs)
     for clusters_cnt in range(config.clusters_count_start, config.clusters_count_stop + 1, config.clusters_count_step):
-        gens = {}
-        for group in config.data_type:
-            cluster_db = h5py.File(config.get_clusters_db_path(group, clusters_cnt), 'r')
-            ids = get_ids(cluster_db)
-            cluster_db.close()
-            gens[group] = SampleSequence(ids, get_labels(ids),
-                                         config.get_clusters_db_path(group, clusters_cnt), config.batch_size)
+        gens = create_data_gens(clusters_cnt)
+
         for layer_cnt in range(config.layer_cnt_start, config.layer_cnt_stop + 1, config.layer_cnt_step):
             for layer_size in range(config.layer_size_start, config.layer_size_stop + 1, config.layer_size_step):
                 for activation in config.activation_functions:
-                    csv_logger = CSVLogger("perceptron_"
-                                           + str(clusters_cnt) + "_"
-                                           + str(layer_cnt) + "_"
-                                           + str(layer_size) + "_"
-                                           + activation + ".csv", append=True, separator=';')
-
+                    csv_logger = create_csv_logger(clusters_cnt, layer_cnt, layer_size, activation)
                     model = build_perceptron(clusters_cnt, layer_cnt, layer_size, activation)
                     model.fit_generator(gens['training'],
                                         validation_data=gens['validation'],
                                         epochs=config.max_epochs,
                                         callbacks=[stop_callback, csv_logger])
-                    # evaluate the model
-                    scores = model.evaluate_generator(gens['test'])
-                    for i in range(len(scores)):
-                        logging.info("{name}: {value}"
-                                     .format(name=model.metrics_names[i],
-                                             value=scores[i]))
+                    evaluate_model(model, gens['test'])
 
         for key in gens.keys():
             gens[key].close()
