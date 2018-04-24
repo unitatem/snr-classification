@@ -13,13 +13,20 @@ def load_database(db_path):
     return features_db
 
 
+def calculate_basic_record_cnt(db):
+    return sum([db[class_name][photo_name].shape[0] for class_name in db for photo_name in db[class_name]])
+
+
 def concatenate_data(features_db):
     logging.info("Concatenating data")
-    data = np.array([], dtype=np.float32)
-    data.shape = (0, 128)
+    number_of_records = calculate_basic_record_cnt(features_db)
+    data = np.empty(shape=(number_of_records, 128), dtype=np.float32)
+    idx = 0
     for class_name in features_db:
         for photo_name in features_db[class_name]:
-            data = np.concatenate((data, features_db[class_name][photo_name]))
+            rows = features_db[class_name][photo_name].shape[0]
+            data[idx:idx + rows, :] = features_db[class_name][photo_name]
+            idx += rows
     return data
 
 
@@ -36,7 +43,7 @@ def find_clusters(data, clusters_count):
     return kmeans
 
 
-def clusterize_data(features_db, kmeans):
+def clusterize_data_and_create_db(features_db, kmeans):
     logging.info("Changing space from features into clusters")
     cluster_db_file = h5py.File(config.clusters_db_path, "w")
     for class_name in features_db:
@@ -63,8 +70,8 @@ def calculate_labels_dim(h5_file):
 if __name__ == "__main__":
     logging.basicConfig(filename="clusters.log", level=logging.DEBUG)
 
-    features_db = load_database(config.features_db_path)
-    data = concatenate_data(features_db)
+    database = load_database(config.features_db_path)
+    data = concatenate_data(database)
     kmeans = find_clusters(data, config.clusters_count)
-    clusterize_data(features_db, kmeans)
-    features_db.close()
+    clusterize_data_and_create_db(database, kmeans)
+    database.close()

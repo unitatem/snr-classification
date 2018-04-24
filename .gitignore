@@ -9,4 +9,5 @@ debug
 resources
 *.log
 __pycache__
+*.cprof
 
