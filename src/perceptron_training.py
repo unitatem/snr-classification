@@ -18,16 +18,23 @@ def top_5_accuracy(y_true, y_pred):
     return metrics.top_k_categorical_accuracy(y_true, y_pred, k=5)
 
 
-def build_perceptron():
-    logging.info('Building perceptron: [' + ' '.join([str(x) for x in config.sizes_of_layers]) + ']')
+def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
+    logging.info('Building perceptron: [{clusters_cnt} clusters_cnt, '
+                 '{layer_cnt} layers, '
+                 '{size_of_layers} neurons_in_every_layer, '
+                 '{activation} activation]'
+                 .format(clusters_cnt=clusters_cnt,
+                         layer_cnt=layer_cnt,
+                         size_of_layers=size_of_layers,
+                         activation=activation))
     model = Sequential()
-    for i, layer_size in enumerate(config.sizes_of_layers):
+    for i in range(layer_cnt):
         if i == 0:
-            model.add(Dense(layer_size, input_dim=config.clusters_count))
+            model.add(Dense(layer_size, input_dim=clusters_cnt))
         else:
             model.add(Dense(layer_size))
-        model.add(Activation('sigmoid'))
-    cluster_db = h5py.File(config.clusters_db_path, 'r')
+        model.add(Activation(activation))
+    cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt), 'r')
     output_layer_size = len(cluster_db)
     cluster_db.close()
     model.add(Dense(output_layer_size))
@@ -39,8 +46,8 @@ def build_perceptron():
     return model
 
 
-def create_class_mapping():
-    cluster_db = h5py.File(config.clusters_db_path, 'r')
+def create_class_mapping(clusters_cnt):
+    cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt), 'r')
     class_names = list(cluster_db.keys())
     cluster_db.close()
     sorted(class_names)
@@ -50,8 +57,8 @@ def create_class_mapping():
     return mapping
 
 
-def divide_data():
-    cluster_db = h5py.File(config.clusters_db_path)
+def divide_data(clusters_cnt):
+    cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt))
     training_ids = []
     test_ids = []
     for class_name in cluster_db:
@@ -70,7 +77,7 @@ def divide_data():
 
 
 def get_labels(sample_ids):
-    mapping = create_class_mapping()
+    mapping = create_class_mapping(clusters_cnt)
     labels = [mapping[sample_id[0]] for sample_id in sample_ids]
     labels = to_categorical(labels, num_classes=len(mapping))
     return labels
@@ -78,16 +85,27 @@ def get_labels(sample_ids):
 
 if __name__ == '__main__':
     logging.basicConfig(filename='perceptron.log', level=logging.DEBUG)
-    training_ids, test_ids = divide_data()
 
-    training_gen = SampleSequence(training_ids, get_labels(training_ids), config.batch_size)
-    test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size)
-
-    model = build_perceptron()
-    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required, 
+    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
                                        patience=config.max_no_improvement_epochs)
-    model.fit_generator(training_gen, validation_data=test_gen, epochs=config.max_epochs, callbacks=[callback])
 
-    training_gen.close()
-    test_gen.close()
-
+    for clusters_cnt in range(config.clusters_count_start, config.clusters_count_stop + 1, config.clusters_count_step):
+        training_ids, test_ids = divide_data(clusters_cnt)
+        training_gen = SampleSequence(training_ids, get_labels(training_ids), config.batch_size, clusters_cnt)
+        test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size, clusters_cnt)
+        for layer_cnt in range(config.layer_cnt_start, config.layer_cnt_stop + 1, config.layer_cnt_step):
+            for layer_size in range(config.layer_size_start, config.layer_size_stop + 1, config.layer_size_step):
+                for activation in config.activation_functions:
+                    model = build_perceptron(clusters_cnt, layer_cnt, layer_size, activation)
+                    model.fit_generator(training_gen,
+                                        validation_data=test_gen,
+                                        epochs=config.max_epochs,
+                                        callbacks=[callback])
+                    # evaluate the model
+                    scores = model.evaluate_generator(test_gen)
+                    for i in range(len(scores)):
+                        logging.info("{name}: {value}"
+                                      .format(name=model.metrics_names[i],
+                                              value=scores[i]))
+        training_gen.close()
+        test_gen.close()

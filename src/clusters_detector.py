@@ -30,28 +30,28 @@ def concatenate_data(features_db):
     return data
 
 
-def find_clusters(data, clusters_count):
+def find_clusters(data, clusters_cnt):
     """
     find data clusters
     :param data: hyperdimensional data, data has to have more samples than required number of clusters
-    :param clusters_count: required number of clusters
+    :param clusters_cnt: required number of clusters
     :return: model containing clusters parameters
     """
-    logging.info("Finding clusters [{clusters_cnt}]".format(clusters_cnt=clusters_count))
+    logging.info("Finding clusters [{clusters_cnt}]".format(clusters_cnt=clusters_cnt))
     # fixed random_state for simpler and deterministic comparison between runs of algorithm
-    kmeans = KMeans(n_clusters=clusters_count, random_state=0).fit(data)
+    kmeans = KMeans(n_clusters=clusters_cnt, random_state=0).fit(data)
     return kmeans
 
 
-def clusterize_data_and_create_db(features_db, kmeans):
-    logging.info("Changing space from features into clusters")
-    cluster_db_file = h5py.File(config.clusters_db_path, "w")
+def clusterize_data_and_create_db(features_db, kmeans, clusters_cnt):
+    logging.info("Changing space from features into clusters [{clusters_cnt}]".format(clusters_cnt=clusters_cnt))
+    cluster_db_file = h5py.File(config.get_clusters_db_path(clusters_cnt), "w")
     for class_name in features_db:
         grp = cluster_db_file.create_group(class_name)
         for photo_name in features_db[class_name]:
             # descriptors changed to labels from k-means
             labels = kmeans.predict(features_db[class_name][photo_name])
-            bins = np.bincount(labels, minlength=config.clusters_count)
+            bins = np.bincount(labels, minlength=clusters_cnt)
             grp.create_dataset(photo_name, data=bins)
     cluster_db_file.close()
 
@@ -72,6 +72,7 @@ if __name__ == "__main__":
 
     database = load_database(config.features_db_path)
     data = concatenate_data(database)
-    kmeans = find_clusters(data, config.clusters_count)
-    clusterize_data_and_create_db(database, kmeans)
+    for clusters_cnt in range(config.clusters_count_start, config.clusters_count_stop, config.clusters_count_step):
+        kmeans = find_clusters(data, clusters_cnt)
+        clusterize_data_and_create_db(database, kmeans, clusters_cnt)
     database.close()
