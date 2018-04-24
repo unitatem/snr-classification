@@ -1,5 +1,6 @@
 import h5py
 import logging
+import keras
 
 from keras import callbacks
 from keras import metrics
@@ -149,6 +150,7 @@ if __name__ == '__main__':
                                         epochs=config.max_epochs,
                                         callbacks=[stop_callback, csv_logger])
                     evaluate_model(model, gens['test'])
+                    keras.backend.clear_session()
 
         for key in gens.keys():
             gens[key].close()
