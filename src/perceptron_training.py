@@ -35,7 +35,7 @@ def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
         else:
             model.add(Dense(layer_size))
         model.add(Activation(activation))
-    cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt), 'r')
+    cluster_db = h5py.File(config.get_clusters_db_path('training', clusters_cnt), 'r')
     output_layer_size = len(cluster_db)
     cluster_db.close()
     model.add(Dense(output_layer_size))
@@ -48,7 +48,7 @@ def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
 
 
 def create_class_mapping(clusters_cnt):
-    cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt), 'r')
+    cluster_db = h5py.File(config.get_clusters_db_path('training', clusters_cnt), 'r')
     class_names = list(cluster_db.keys())
     cluster_db.close()
     sorted(class_names)
@@ -58,23 +58,15 @@ def create_class_mapping(clusters_cnt):
     return mapping
 
 
-def divide_data(clusters_cnt):
-    cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt))
-    training_ids = []
-    test_ids = []
-    for class_name in cluster_db:
-        class_ids = []
-        for photo_name in cluster_db[class_name]:
-            class_ids.append((class_name, photo_name))
-        shuffle(class_ids)
-        divide_point = int(len(class_ids) * config.training_total_ratio)
-        training_ids += class_ids[:divide_point]
-        test_ids += class_ids[divide_point:]
-    cluster_db.close()
-    shuffle(training_ids)
-    shuffle(test_ids)
 
-    return training_ids, test_ids
+    # cluster_db = h5py.File(config.get_clusters_db_path(clusters_cnt))
+def get_ids(cluster_db):
+    ids = []
+    for class_name in cluster_db:
+        for photo_name in cluster_db[class_name]:
+            ids.append((class_name, photo_name))
+    shuffle(ids)
+    return ids
 
 
 def get_labels(sample_ids):
@@ -89,11 +81,14 @@ if __name__ == '__main__':
 
     stop_callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
                                             patience=config.max_no_improvement_epochs)
-
     for clusters_cnt in range(config.clusters_count_start, config.clusters_count_stop + 1, config.clusters_count_step):
-        training_ids, test_ids = divide_data(clusters_cnt)
-        training_gen = SampleSequence(training_ids, get_labels(training_ids), config.batch_size, clusters_cnt)
-        test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size, clusters_cnt)
+        gens = {}
+        for group in config.data_type:
+            cluster_db = h5py.File(config.get_clusters_db_path(group, clusters_cnt), 'r')
+            ids = get_ids(cluster_db)
+            cluster_db.close()
+            gens[group] = SampleSequence(ids, get_labels(ids),
+                                         config.get_clusters_db_path(group, clusters_cnt), config.batch_size)
         for layer_cnt in range(config.layer_cnt_start, config.layer_cnt_stop + 1, config.layer_cnt_step):
             for layer_size in range(config.layer_size_start, config.layer_size_stop + 1, config.layer_size_step):
                 for activation in config.activation_functions:
@@ -104,13 +99,16 @@ if __name__ == '__main__':
                                            + activation + ".csv", append=True, separator=';')
 
                     model = build_perceptron(clusters_cnt, layer_cnt, layer_size, activation)
-                    model.fit_generator(training_gen,
-                                        validation_data=test_gen,
+                    model.fit_generator(gens['training'],
+                                        validation_data=gens['validation'],
                                         epochs=config.max_epochs,
                                         callbacks=[stop_callback, csv_logger])
                     # evaluate the model
-                    scores = model.evaluate_generator(test_gen)
+                    scores = model.evaluate_generator(gens['test'])
                     for i in range(len(scores)):
                         logging.info("{name}: {value}"
                                      .format(name=model.metrics_names[i],
                                              value=scores[i]))
+
+        for key in gens.keys():
+            gens[key].close()

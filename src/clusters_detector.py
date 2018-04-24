@@ -9,7 +9,7 @@ from src import config
 
 def load_database(db_path):
     logging.info("Loading data {db}".format(db=db_path))
-    features_db = h5py.File(config.features_db_path, "r")
+    features_db = h5py.File(db_path, "r")
     return features_db
 
 
@@ -43,9 +43,9 @@ def find_clusters(data, clusters_cnt):
     return kmeans
 
 
-def clusterize_data_and_create_db(features_db, kmeans, clusters_cnt):
-    logging.info("Changing space from features into clusters [{clusters_cnt}]".format(clusters_cnt=clusters_cnt))
-    cluster_db_file = h5py.File(config.get_clusters_db_path(clusters_cnt), "w")
+def clusterize_data_and_create_db(features_db, kmeans, clusters_db_path):
+    logging.info("Changing space from features into [{clusters_db_path}]".format(clusters_db_path=clusters_db_path))
+    cluster_db_file = h5py.File(clusters_db_path, "w")
     for class_name in features_db:
         grp = cluster_db_file.create_group(class_name)
         for photo_name in features_db[class_name]:
@@ -70,9 +70,12 @@ def calculate_labels_dim(h5_file):
 if __name__ == "__main__":
     logging.basicConfig(filename="clusters.log", level=logging.DEBUG)
 
-    database = load_database(config.features_db_path)
-    data = concatenate_data(database)
-    for clusters_cnt in range(config.clusters_count_start, config.clusters_count_stop, config.clusters_count_step):
+    features_db = load_database(config.groups_db_path['training'])
+    data = concatenate_data(features_db)
+    features_db.close()
+    for clusters_cnt in range(config.clusters_count_start, config.clusters_count_stop + 1, config.clusters_count_step):
         kmeans = find_clusters(data, clusters_cnt)
-        clusterize_data_and_create_db(database, kmeans, clusters_cnt)
-    database.close()
+        for group in config.data_type:
+            group_features_db = load_database(config.groups_db_path[group])
+            clusterize_data_and_create_db(group_features_db, kmeans, config.get_clusters_db_path(group, clusters_cnt))
+            group_features_db.close()
