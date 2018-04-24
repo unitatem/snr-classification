@@ -27,7 +27,7 @@ def build_perceptron():
         else:
             model.add(Dense(layer_size))
         model.add(Activation('sigmoid'))
-    cluster_db = h5py.File(config.clusters_db_path, 'r')
+    cluster_db = h5py.File(config.clusters_groups_db_path['training'], 'r')
     output_layer_size = len(cluster_db)
     cluster_db.close()
     model.add(Dense(output_layer_size))
@@ -40,7 +40,7 @@ def build_perceptron():
 
 
 def create_class_mapping():
-    cluster_db = h5py.File(config.clusters_db_path, 'r')
+    cluster_db = h5py.File(config.clusters_groups_db_path['training'], 'r')
     class_names = list(cluster_db.keys())
     cluster_db.close()
     sorted(class_names)
@@ -50,23 +50,13 @@ def create_class_mapping():
     return mapping
 
 
-def divide_data():
-    cluster_db = h5py.File(config.clusters_db_path)
-    training_ids = []
-    test_ids = []
+def get_ids(cluster_db):
+    ids = []
     for class_name in cluster_db:
-        class_ids = []
         for photo_name in cluster_db[class_name]:
-            class_ids.append((class_name, photo_name))
-        shuffle(class_ids)
-        divide_point = int(len(class_ids) * config.training_total_ratio)
-        training_ids += class_ids[:divide_point]
-        test_ids += class_ids[divide_point:]
-    cluster_db.close()
-    shuffle(training_ids)
-    shuffle(test_ids)
-
-    return training_ids, test_ids
+            ids.append((class_name, photo_name))
+    shuffle(ids)
+    return ids
 
 
 def get_labels(sample_ids):
@@ -78,15 +68,25 @@ def get_labels(sample_ids):
 
 if __name__ == '__main__':
     logging.basicConfig(filename='perceptron.log', level=logging.DEBUG)
-    training_ids, test_ids = divide_data()
 
-    training_gen = SampleSequence(training_ids, get_labels(training_ids), config.batch_size)
-    test_gen = SampleSequence(test_ids, get_labels(test_ids), config.batch_size)
+    ids = {}
+    gens = {}
+    for group in config.clusters_groups_db_path.keys():
+        cluster_db = h5py.File(config.clusters_groups_db_path[group], 'r')
+        ids = get_ids(cluster_db)
+        cluster_db.close()
+        gens[group] = SampleSequence(ids, get_labels(ids),
+                                     config.clusters_groups_db_path[group], config.batch_size)
 
     model = build_perceptron()
-    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required, 
+    callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
                                        patience=config.max_no_improvement_epochs)
-    model.fit_generator(training_gen, validation_data=test_gen, epochs=config.max_epochs, callbacks=[callback])
+    model.fit_generator(gens['training'], validation_data=gens['validation'],
+                        epochs=config.max_epochs, callbacks=[callback])
+    model.evaluate_generator(gens['test'])
 
-    training_gen.close()
-    test_gen.close()
+    # for i in range(len(gens['training'])):
+    #     print(list(gens['training'][i][1]))
+
+    for key in gens.keys():
+        gens[key].close()

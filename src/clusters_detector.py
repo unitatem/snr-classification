@@ -36,9 +36,9 @@ def find_clusters(data, clusters_count):
     return kmeans
 
 
-def clusterize_data(features_db, kmeans):
+def clusterize_data(features_db, kmeans, clusters_db_path):
     logging.info("Changing space from features into clusters")
-    cluster_db_file = h5py.File(config.clusters_db_path, "w")
+    cluster_db_file = h5py.File(clusters_db_path, "w")
     for class_name in features_db:
         grp = cluster_db_file.create_group(class_name)
         for photo_name in features_db[class_name]:
@@ -63,8 +63,11 @@ def calculate_labels_dim(h5_file):
 if __name__ == "__main__":
     logging.basicConfig(filename="clusters.log", level=logging.DEBUG)
 
-    features_db = load_database(config.features_db_path)
+    features_db = load_database(config.groups_db_path['training'])
     data = concatenate_data(features_db)
     kmeans = find_clusters(data, config.clusters_count)
-    clusterize_data(features_db, kmeans)
+    for group in config.groups_db_path.keys():
+        group_db = h5py.File(config.groups_db_path[group], 'r')
+        clusterize_data(features_db, kmeans, config.clusters_groups_db_path[group])
+        group_db.close()
     features_db.close()
