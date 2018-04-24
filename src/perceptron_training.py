@@ -61,7 +61,7 @@ def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
     output_layer_size = len(cluster_db)
     cluster_db.close()
     model.add(Dense(output_layer_size))
-    model.add(Activation('tanh'))  # change activation functions
+    model.add(Activation('softmax'))
     model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
                   metrics=[top_1_accuracy,
