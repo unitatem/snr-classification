@@ -11,4 +11,5 @@ resources
 *.csv
 __pycache__
 *.cprof
+*.jpg
 
