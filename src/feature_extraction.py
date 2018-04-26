@@ -4,11 +4,24 @@ import logging
 import matplotlib.pyplot as plt
 import os
 
+from sklearn.model_selection import train_test_split
+
 from src.bounding_box import BoundingBox
 from src import config
 
 
-def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_N_match):
+def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_n_match):
+    """
+
+    :param photo1: 1st photo
+    :param photo1_kp: 1st photo keypoints
+    :param photo1_desc: 1st photo descriptors
+    :param photo2: 2nd photo
+    :param photo2_kp: 2nd photo keypoints
+    :param photo2_desc: 2nd photo descriptors
+    :param top_n_match: number of top matched features that sould be visualized
+    :return:
+    """
     # create a BFMatcher object which will match up the SIFT features
     bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
 
@@ -22,7 +35,7 @@ def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo
     match_img = cv2.drawMatches(
         photo1, photo1_kp,
         photo2, photo2_kp,
-        matches[:top_N_match], photo2.copy(), flags=0)
+        matches[:top_n_match], photo2.copy(), flags=0)
 
     plt.figure(figsize=(12, 6))
     plt.imshow(match_img)
@@ -103,6 +116,43 @@ def get_bounding_boxes(file_path):
     return bounding_boxes
 
 
+def divide_data(features_db):
+    labels_list = []
+    ids = []
+    for class_name in features_db:
+        for photo_name in features_db[class_name]:
+            ids.append((class_name, photo_name))
+            labels_list.append(class_name)
+    split_ids = {'training': {}, 'validation': {}, 'test': {}}
+
+    split_ratio = config.training_total_ratio + config.validation_total_ratio
+    split_ids['training']['data'], \
+        split_ids['test']['data'], \
+        split_ids['training']['labels'], \
+        split_ids['test']['labels'] = train_test_split(ids, labels_list,
+                                                       train_size=split_ratio,
+                                                       stratify=labels_list,
+                                                       random_state=0)
+
+    split_ratio = config.training_total_ratio / (config.training_total_ratio + config.validation_total_ratio)
+    split_ids['training']['data'], \
+        split_ids['validation']['data'], \
+        split_ids['training']['labels'], \
+        split_ids['validation']['labels'] = train_test_split(split_ids['training']['data'],
+                                                             split_ids['training']['labels'],
+                                                             train_size=split_ratio,
+                                                             stratify=split_ids['training']['labels'],
+                                                             random_state=0)
+
+    for group_name in split_ids.keys():
+        group_db = h5py.File(config.groups_db_path[group_name], 'w')
+        for photo in split_ids[group_name]['data']:
+            if photo[0] not in group_db.keys():
+                group_db.create_group(photo[0])
+            group_db[photo[0]].create_dataset(photo[1], data=features_db[photo[0]][photo[1]])
+        group_db.close()
+
+
 if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
 
@@ -125,3 +175,9 @@ if __name__ == "__main__":
             class_descriptors.create_dataset(photo_name_hash, data=photo_desc)
     features_db.close()
     logging.info("Extraction finished")
+
+    logging.info("Dividing data into groups")
+    features_db = h5py.File(config.features_db_path, "r")
+    divide_data(features_db)
+    features_db.close()
+    logging.info("Dividing finished")
