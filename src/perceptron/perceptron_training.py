@@ -10,7 +10,7 @@ from keras.models import Sequential
 from keras.utils import to_categorical
 from random import shuffle
 from src import config
-from src.sample_sequence import SampleSequence
+from src.perceptron.sample_sequence import SampleSequence
 
 
 def top_1_accuracy(y_true, y_pred):

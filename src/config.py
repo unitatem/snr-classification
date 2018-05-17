@@ -1,8 +1,7 @@
 import os
 
 take_every_nth_sample = 1
-
-data_multiplication_factor = 5
+data_multiplication_factor = 3
 
 # every range in config is both side closed <a, b>
 clusters_count_start = 8
@@ -27,7 +26,7 @@ max_epochs = 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2
 
-resources_path = "../resources"
+resources_path = "../../resources"
 
 set_path = os.path.join(resources_path, "SET_B")
 bounding_boxes_path = os.path.join(resources_path, "bounding_boxes.txt")
