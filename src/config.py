@@ -31,38 +31,35 @@ resources_path = "../../resources"
 set_path = os.path.join(resources_path, "SET_B")
 bounding_boxes_path = os.path.join(resources_path, "bounding_boxes.txt")
 
-features_db_path = os.path.join(resources_path,
-                                "extracted_features_" + str(take_every_nth_sample) + "m" + str(
-                                    data_multiplication_factor) + ".hdf5")
+
+def get_custom_extension_without_multiplication():
+    return str(take_every_nth_sample) + '.hdf5'
+
+
+def get_custom_extension():
+    return str(take_every_nth_sample) + 'm' + str(data_multiplication_factor) + '.hdf5'
+
+
+features_db_path = os.path.join(resources_path, "extracted_features_" + get_custom_extension())
 
 data_type = ['training', 'validation', 'test']
 
-groups_db_path = {'training': os.path.join(resources_path,
-                                           "training_features_" + str(take_every_nth_sample) + "m" + str(
-                                               data_multiplication_factor) + ".hdf5"),
-                  'validation': os.path.join(resources_path,
-                                             "validation_features_" + str(take_every_nth_sample) + "m" + str(
-                                                 data_multiplication_factor) + ".hdf5"),
-                  'test': os.path.join(resources_path,
-                                       "test_features_" + str(take_every_nth_sample) + "m" + str(
-                                           data_multiplication_factor) + ".hdf5")}
+groups_db_path = {'training': os.path.join(resources_path, "training_features_" + get_custom_extension()),
+                  'validation': os.path.join(resources_path, "validation_features_" + get_custom_extension()),
+                  'test': os.path.join(resources_path, "test_features_" + get_custom_extension())}
 
 
 def get_clusters_db_path(data_type, clusters_count):
     transformed_groups_db_path = {
-        'training': os.path.join(resources_path,
-                                 "training_clusters_" + str(take_every_nth_sample) + "m" + str(
-                                     data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5"),
-        'validation': os.path.join(resources_path,
-                                   "validation_clusters_" + str(take_every_nth_sample) + "m" + str(
-                                       data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5"),
-        'test': os.path.join(resources_path,
-                             "test_clusters_" + str(take_every_nth_sample) + "m" + str(
-                                 data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5")}
+        'training': os.path.join(resources_path, "training_clusters_" + str(clusters_count) + '_' + get_custom_extension()),
+        'validation': os.path.join(resources_path, "validation_clusters_" + str(clusters_count) + '_' + get_custom_extension()),
+        'test': os.path.join(resources_path, "test_clusters_" + str(clusters_count) + '_' + get_custom_extension())}
     return transformed_groups_db_path[data_type]
 
 
 def get_labels_db_path(clusters_count):
-    return os.path.join(resources_path,
-                        "labels_" + str(take_every_nth_sample) + "m" + str(data_multiplication_factor) + "_" + str(
-                            clusters_count) + ".hdf5")
+    return os.path.join(resources_path, "labels_" + str(clusters_count) + '_' + get_custom_extension())
+
+
+def get_convolution_datasets_path(key):
+    return os.path.join(resources_path, 'dataset_' + key + '_' + get_custom_extension_without_multiplication())

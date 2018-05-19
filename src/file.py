@@ -28,9 +28,34 @@ def gen_file_path(dir_path):
         yield os.path.join(dir_path, file), file
 
 
+def get_total_img_cnt(dataset_path):
+    counter = 0
+    for folder_path in gen_subdir_path(dataset_path):
+        for _, file_name in gen_file_path(folder_path):
+            counter += 1
+    return counter
+
+
+def scan_content(dataset_path):
+    total_img_cnt = get_total_img_cnt(dataset_path)
+    content = [('folder_path', 'img_name') for _ in range(total_img_cnt)]
+
+    idx = 0
+    for folder_path in gen_subdir_path(dataset_path):
+        print(folder_path)
+        for _, file_name in gen_file_path(folder_path):
+            content[idx] = (folder_path, file_name)
+            idx += 1
+    return content
+
+
 def remove_extension(file_name):
     return file_name.split(".")[0]
 
 
-def get_dst_folder(path):
+def add_folder(path, folder_name):
+    return path + folder_name + '/'
+
+
+def get_folder(path):
     return os.path.basename(os.path.normpath(path))

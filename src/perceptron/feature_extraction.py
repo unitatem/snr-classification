@@ -155,7 +155,7 @@ if __name__ == "__main__":
     counter = 0
     logging.info("Starting extraction")
     for class_path in file.gen_subdir_path(config.set_path):
-        class_descriptors = features_db.create_group(file.get_dst_folder(class_path))
+        class_descriptors = features_db.create_group(file.get_folder(class_path))
         for photo_path, photo_name in file.gen_file_path(class_path):
             counter += 1
             if counter % config.take_every_nth_sample != 0:
