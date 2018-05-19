@@ -36,6 +36,13 @@ def get_total_img_cnt(dataset_path):
     return counter
 
 
+def get_total_cls_cnt(dataset_path):
+    counter = 0
+    for _ in gen_subdir_path(dataset_path):
+        counter += 1
+    return counter
+
+
 def scan_content(dataset_path):
     total_img_cnt = get_total_img_cnt(dataset_path)
     content = [('folder_path', 'img_name') for _ in range(total_img_cnt)]

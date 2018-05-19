@@ -21,7 +21,7 @@ layer_size_step = 50
 training_total_ratio = 0.5
 validation_total_ratio = 0.3
 
-batch_size = 64
+batch_size = 16  # 64
 max_epochs = 1  # 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2
