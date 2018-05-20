@@ -111,7 +111,8 @@ def generate_subdir_path(dir_path):
     for sub_dir in sub_dirs:
         if sub_dir == ".directory":
             continue
-        yield dir_path + sub_dir + '/'
+        value = os.path.join(dir_path, sub_dir)
+        yield value
 
 
 def generate_file_path(dir_path):
@@ -124,7 +125,7 @@ def generate_file_path(dir_path):
     for file in files:
         if file == ".directory":
             continue
-        yield (dir_path + file), file
+        yield os.path.join(dir_path, file), file
 
 
 def get_bounding_boxes(file_path):
@@ -138,8 +139,8 @@ def get_bounding_boxes(file_path):
     with open(file_path) as file:
         for raw_line in file.readlines():
             tokens = raw_line.strip().split(' ')
-            hash = tokens[0].replace("-", "")
-            bounding_boxes[hash] = BoundingBox(tokens[1:])
+            img_hash = tokens[0].replace("-", "")
+            bounding_boxes[img_hash] = BoundingBox(tokens[1:])
     return bounding_boxes
 
 
@@ -198,7 +199,6 @@ if __name__ == "__main__":
     counter = 0
     logging.info("Starting extraction")
     for class_path in generate_subdir_path(config.set_path):
-        print(class_path)
         class_descriptors = features_db.create_group(os.path.basename(os.path.normpath(class_path)))
         for photo_path, photo_name in generate_file_path(class_path):
             counter += 1

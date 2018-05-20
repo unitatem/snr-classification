@@ -1,3 +1,5 @@
+import os
+
 take_every_nth_sample = 1
 
 data_multiplication_factor = 5
@@ -25,35 +27,43 @@ max_epochs = 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2
 
-resources_path = "../resources/"
+resources_path = "../resources"
 
-set_path = resources_path + "SET_B/"
-bounding_boxes_path = resources_path + "bounding_boxes.txt"
+set_path = os.path.join(resources_path, "SET_B")
+bounding_boxes_path = os.path.join(resources_path, "bounding_boxes.txt")
 
-features_db_path = resources_path + "extracted_features_" + str(take_every_nth_sample) + "m" + str(
-    data_multiplication_factor) + ".hdf5"
+features_db_path = os.path.join(resources_path,
+                                "extracted_features_" + str(take_every_nth_sample) + "m" + str(
+                                    data_multiplication_factor) + ".hdf5")
 
 data_type = ['training', 'validation', 'test']
 
-groups_db_path = {'training': resources_path + "training_features_" + str(take_every_nth_sample) + "m" + str(
-    data_multiplication_factor) + ".hdf5",
-                  'validation': resources_path + "validation_features_" + str(take_every_nth_sample) + "m" + str(
-                      data_multiplication_factor) + ".hdf5",
-                  'test': resources_path + "test_features_" + str(take_every_nth_sample) + "m" + str(
-                      data_multiplication_factor) + ".hdf5"}
+groups_db_path = {'training': os.path.join(resources_path,
+                                           "training_features_" + str(take_every_nth_sample) + "m" + str(
+                                               data_multiplication_factor) + ".hdf5"),
+                  'validation': os.path.join(resources_path,
+                                             "validation_features_" + str(take_every_nth_sample) + "m" + str(
+                                                 data_multiplication_factor) + ".hdf5"),
+                  'test': os.path.join(resources_path,
+                                       "test_features_" + str(take_every_nth_sample) + "m" + str(
+                                           data_multiplication_factor) + ".hdf5")}
 
 
 def get_clusters_db_path(data_type, clusters_count):
     transformed_groups_db_path = {
-        'training': resources_path + "training_clusters_" + str(take_every_nth_sample) + "m" + str(
-            data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5",
-        'validation': resources_path + "validation_clusters_" + str(take_every_nth_sample) + "m" + str(
-            data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5",
-        'test': resources_path + "test_clusters_" + str(take_every_nth_sample) + "m" + str(
-            data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5"}
+        'training': os.path.join(resources_path,
+                                 "training_clusters_" + str(take_every_nth_sample) + "m" + str(
+                                     data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5"),
+        'validation': os.path.join(resources_path,
+                                   "validation_clusters_" + str(take_every_nth_sample) + "m" + str(
+                                       data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5"),
+        'test': os.path.join(resources_path,
+                             "test_clusters_" + str(take_every_nth_sample) + "m" + str(
+                                 data_multiplication_factor) + "_" + str(clusters_count) + ".hdf5")}
     return transformed_groups_db_path[data_type]
 
 
 def get_labels_db_path(clusters_count):
-    return resources_path + "labels_" + str(take_every_nth_sample) + "m" + str(data_multiplication_factor) + "_" + str(
-        clusters_count) + ".hdf5"
+    return os.path.join(resources_path,
+                        "labels_" + str(take_every_nth_sample) + "m" + str(data_multiplication_factor) + "_" + str(
+                            clusters_count) + ".hdf5")
