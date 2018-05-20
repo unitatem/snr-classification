@@ -61,7 +61,7 @@ def remove_extension(file_name):
 
 
 def add_folder(path, folder_name):
-    return path + folder_name + '/'
+    return os.path.join(path, folder_name)
 
 
 def get_folder(path):

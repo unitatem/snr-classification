@@ -1,4 +1,5 @@
 import logging
+import os
 
 import cv2
 import h5py
@@ -27,7 +28,7 @@ def preprocess_image(image):
 
 
 def load_and_preprocess_img(folder_path, img_name, bounding_boxes):
-    img_path = folder_path + img_name
+    img_path = os.path.join(folder_path, img_name)
     img = cv2.imread(img_path)
 
     img_name_hash = file.remove_extension(img_name)
