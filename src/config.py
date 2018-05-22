@@ -1,6 +1,6 @@
 import os
 
-take_every_nth_sample = 5
+take_every_nth_sample = 1
 data_multiplication_factor = 1
 
 # every range in config is both side closed <a, b>
@@ -22,7 +22,7 @@ training_total_ratio = 0.5
 validation_total_ratio = 0.3
 
 batch_size = 16  # 64
-max_epochs = 10  # 200
+max_epochs = 20  # 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2
 

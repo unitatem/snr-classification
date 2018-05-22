@@ -2,7 +2,7 @@ import logging
 
 from keras import Model, callbacks
 from keras.applications.vgg16 import VGG16
-from keras.layers import GlobalAveragePooling2D, Dense
+from keras.layers import Dense, Flatten
 
 import file
 import metric
@@ -11,27 +11,36 @@ from src.convolution.database_sequence import DatabaseSequence
 
 
 def load_vgg16_model():
-    model = VGG16(weights='imagenet', include_top=False)
+    model = VGG16(weights='imagenet',
+                  include_top=False,
+                  input_shape=(224, 224, 3))
     return model
 
 
 def build_nn(classes_cnt):
     base_model = load_vgg16_model()
 
-    # add a global spatial average pooling layer
     x = base_model.output
-    x = GlobalAveragePooling2D()(x)
 
-    # let's add a fully-connected layer
-    x = Dense(1024, activation='relu')(x)
-
-    predictions = Dense(classes_cnt, activation='softmax')(x)
+    # Classification block from original VGG16
+    x = Flatten(name='flatten')(x)
+    x = Dense(4096, activation='relu', name='fc1')(x)
+    x = Dense(4096, activation='relu', name='fc2')(x)
+    predictions = Dense(classes_cnt, activation='softmax', name='predictions')(x)
 
     model = Model(inputs=base_model.input, outputs=predictions)
     return model, base_model
 
 
 def tune_nn(model, base_model, train_seq, validation_seq):
+    """
+    ref url: https://keras.io/applications/
+    """
+    # let's visualize layer names and layer indices to see how many layers
+    # we should freeze:
+    # for i, layer in enumerate(base_model.layers):
+    #     print(i, layer.name)
+
     # first: train only the top layers (which were randomly initialized)
     # i.e. freeze all convolutional VGG16 layers
     for layer in base_model.layers:
@@ -52,11 +61,6 @@ def tune_nn(model, base_model, train_seq, validation_seq):
     # at this point, the top layers are well trained and we can start fine-tuning
     # convolutional layers from VGG16. We will freeze the bottom N layers
     # and train the remaining top layers.
-
-    # let's visualize layer names and layer indices to see how many layers
-    # we should freeze:
-    # for i, layer in enumerate(base_model.layers):
-    #     print(i, layer.name)
 
     # we chose to train the top 1 VGG16 blocks, i.e. we will freeze
     # the first 15 layers and unfreeze the rest:
