@@ -7,7 +7,7 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator, img_to_array
 from sklearn.model_selection import train_test_split
 
-import file
+from src import file
 from src import config
 from src.bounding_box import BoundingBox
 

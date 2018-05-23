@@ -9,7 +9,7 @@ from keras.models import Sequential
 from keras.utils import to_categorical
 from random import shuffle
 
-import metric
+from src import metric
 from src import config
 from src.perceptron.sample_sequence import SampleSequence
 

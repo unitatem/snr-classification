@@ -1,7 +1,7 @@
 from sklearn.model_selection import train_test_split
 
-import config
-import file
+from src import config
+from src import file
 
 
 def divide(content_list):

@@ -2,10 +2,10 @@ import logging
 
 from keras import Model, callbacks
 from keras.applications.vgg16 import VGG16
-from keras.layers import Dense, Flatten
+from keras.layers import Dense, GlobalAveragePooling2D
 
-import file
-import metric
+from src import file
+from src import metric
 from src import config
 from src.convolution.database_sequence import DatabaseSequence
 
@@ -22,11 +22,9 @@ def build_nn(classes_cnt):
 
     x = base_model.output
 
-    # Classification block from original VGG16
-    x = Flatten(name='flatten')(x)
-    x = Dense(4096, activation='relu', name='fc1')(x)
-    x = Dense(4096, activation='relu', name='fc2')(x)
-    predictions = Dense(classes_cnt, activation='softmax', name='predictions')(x)
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(256, activation='relu')(x)
+    predictions = Dense(classes_cnt, activation='softmax')(x)
 
     model = Model(inputs=base_model.input, outputs=predictions)
     return model, base_model

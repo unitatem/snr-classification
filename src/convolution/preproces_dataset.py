@@ -8,10 +8,10 @@ import numpy as np
 from keras.applications.vgg16 import preprocess_input
 from keras.preprocessing import image as image_manip
 
-import config
-import divide_dataset
-import file
-from bounding_box import BoundingBox
+from src import config
+from src import divide_dataset
+from src import file
+from src.bounding_box import BoundingBox
 
 
 def plot_img(img):

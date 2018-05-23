@@ -49,10 +49,8 @@ class DatabaseSequence(utils.Sequence):
 
     def _setup_labels(self):
         cls_dict = dict()
-        for key in self.dataset.keys():
-            cls_dict[key] = 0
-        for i, cls_name in enumerate(cls_dict.keys()):
-            cls_dict[cls_name] = i
+        for i, key in enumerate(self.dataset.keys()):
+            cls_dict[key] = i
 
         self.labels = [0 for _ in range(self._length())]
         for i, (cls_name, _) in enumerate(self.content):
