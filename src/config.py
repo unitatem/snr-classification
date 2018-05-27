@@ -63,3 +63,6 @@ def get_labels_db_path(clusters_count):
 
 def get_convolution_datasets_path(key):
     return os.path.join(resources_path, 'dataset_' + key + '_' + get_custom_extension_without_multiplication())
+
+
+base_model_path = os.path.join(resources_path, "base_model.hdf5")
