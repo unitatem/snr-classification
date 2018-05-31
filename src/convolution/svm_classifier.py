@@ -10,11 +10,13 @@ from convolution.database_sequence import DatabaseSequence
 from src import config
 
 
-def reshape_features(features):
+def postprocess_features(features):
     return np.reshape(features, (features.shape[0], 7 * 7 * 512))
 
 
-def get_dataset(img_db_path, transformation_model):
+def transform_dataset(img_db_path, transformation_model):
+    logging.debug("Load dataset {path}".format(path=img_db_path))
+
     total_cls_cnt = file.get_total_cls_cnt(config.set_path)
     assert total_cls_cnt != 0
 
@@ -23,33 +25,50 @@ def get_dataset(img_db_path, transformation_model):
     labels = data_seq.labels
     data_seq.close()
 
-    features_array = reshape_features(features)
+    features_array = postprocess_features(features)
 
     return features_array, labels
+
+
+def init_svm(gamma):
+    # Default values
+    # kernel = rbf (exponential kernel)
+    # gamma = 1/n_features
+    # verbose = False
+    svm = SVC(kernel="rbf", gamma=gamma)
+    return svm
+
+
+def show_model(model):
+    for i, layer in enumerate(model.layers):
+        print(i, layer.name)
 
 
 def main():
     logging.basicConfig(filename="svm_classifier.log", level=logging.DEBUG)
 
     base_model = load_model(config.base_model_path)
-    # for i, layer in enumerate(base_model.layers):
-    #     print(i, layer.name)
 
-    # 'training'
-    features_train, labels_train = get_dataset(config.get_convolution_datasets_path('validation'), base_model)
+    features_train, labels_train = transform_dataset(config.get_convolution_datasets_path('training'), base_model)
+    features_test, labels_test = transform_dataset(config.get_convolution_datasets_path('test'), base_model)
 
-    svm = SVC()
-    svm.fit(features_train, labels_train)
+    for gamma in config.svm_gamma_list:
+        logging.info("Run parameters: gamma:{gamma}".format(gamma=gamma))
+        # train
+        svm = init_svm(gamma)
+        svm.fit(features_train, labels_train)
 
-    features_test, labels_test = get_dataset(config.get_convolution_datasets_path('test'), base_model)
-    y_predict = svm.predict(features_test)
+        # validate
+        y_predict = svm.predict(features_test)
 
-    cfmx = confusion_matrix(labels_test, y_predict)
-    print("Confusion matrix:\n")
-    print(cfmx)
-    report = classification_report(labels_test, y_predict)
-    print("Classification report:\n")
-    print(report)
+        # save params
+        cfmx = confusion_matrix(labels_test, y_predict)
+        report = classification_report(labels_test, y_predict)
+
+        logging.info("Confusion matrix:\n")
+        logging.info(cfmx)
+        logging.info("Classification report:\n")
+        logging.info(report)
 
 
 if __name__ == "__main__":
