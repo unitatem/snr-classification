@@ -1,6 +1,6 @@
 import os
 
-take_every_nth_sample = 1
+take_every_nth_sample = 5
 data_multiplication_factor = 1
 
 # every range in config is both side closed <a, b>
