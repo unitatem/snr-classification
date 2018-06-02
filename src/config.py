@@ -23,11 +23,10 @@ filter_channels_stop = 64
 filter_channels_ratio = 2
 
 # ref: https://keras.io/losses/
-# mean_squared_error
-#
 loss_functions = ["mean_squared_error", "mean_squared_logarithmic_error",
                   "logcosh", "categorical_crossentropy", "poisson"]
 
+save_cnn_model = False
 
 svm_gamma_list = ['auto', 1, 2, 3, 5, 8, 13, 21, 34]
 

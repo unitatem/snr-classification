@@ -92,6 +92,10 @@ def main():
                     model = train_model(model, gen_train, gen_validation, loss_function)
 
                     evaluate_model(model, gen_test)
+
+                    if config.save_cnn_model:
+                        logging.info("Saving base_model")
+                        model.save(config.base_model_path)
                     keras.backend.clear_session()
 
     gen_test.close()
