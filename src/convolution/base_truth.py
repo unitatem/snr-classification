@@ -4,9 +4,9 @@ from keras import Model, callbacks
 from keras.applications.vgg16 import VGG16
 from keras.layers import Dense, GlobalAveragePooling2D
 
+from src import config
 from src import file
 from src import metric
-from src import config
 from src.convolution.database_sequence import DatabaseSequence
 
 
@@ -22,6 +22,7 @@ def build_nn(classes_cnt):
 
     x = base_model.output
 
+    # classifier
     x = GlobalAveragePooling2D()(x)
     x = Dense(256, activation='relu')(x)
     predictions = Dense(classes_cnt, activation='softmax')(x)
@@ -96,20 +97,24 @@ def main():
 
     total_cls_cnt = file.get_total_cls_cnt(config.set_path)
     assert total_cls_cnt != 0
-    seq_train = DatabaseSequence(config.get_convolution_datasets_path('training'), config.batch_size, total_cls_cnt)
+    seq_train = DatabaseSequence(config.get_convolution_datasets_path('training'), config.batch_size, total_cls_cnt,
+                                 True)
     seq_validation = DatabaseSequence(config.get_convolution_datasets_path('validation'),
-                                      config.batch_size, total_cls_cnt)
+                                      config.batch_size, total_cls_cnt, True)
 
     model, base_model = build_nn(total_cls_cnt)
     model = tune_nn(model, base_model, seq_train, seq_validation)
 
     seq_validation.close()
     seq_train.close()
-    seq_test = DatabaseSequence(config.get_convolution_datasets_path('test'), config.batch_size, total_cls_cnt)
+    seq_test = DatabaseSequence(config.get_convolution_datasets_path('test'), config.batch_size, total_cls_cnt, True)
 
     evaluate_model(model, seq_test)
 
     seq_test.close()
+
+    logging.info("Saving base_model")
+    base_model.save(config.base_model_path)
 
     return 0
 

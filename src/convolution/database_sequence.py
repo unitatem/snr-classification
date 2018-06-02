@@ -9,14 +9,16 @@ from keras.utils import to_categorical
 
 class DatabaseSequence(utils.Sequence):
 
-    def __init__(self, db_path, batch_size, total_cls_cnt):
+    def __init__(self, db_path, batch_size, total_cls_cnt, request_one_hot_labels):
         self.dataset = h5py.File(db_path, 'r')
         self.batch_size = batch_size
         self.total_cls_cnt = total_cls_cnt
 
         self.content = list()  # (cls, img)
         self._setup_content()
-        self.labels = list()  # one hot matrix
+        self.request_one_hot_labels = request_one_hot_labels
+        self.labels_hot = list()  # one hot matrix
+        self.labels = list()
         self._setup_labels()
 
     def __len__(self):
@@ -26,7 +28,10 @@ class DatabaseSequence(utils.Sequence):
         batch_content = self.content[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_x = [self.dataset[cls][img][0] for (cls, img) in batch_content]
 
-        batch_y = self.labels[idx * self.batch_size:(idx + 1) * self.batch_size]
+        if self.request_one_hot_labels:
+            batch_y = self.labels_hot[idx * self.batch_size:(idx + 1) * self.batch_size]
+        else:
+            batch_y = self.labels[idx * self.batch_size:(idx + 1) * self.batch_size]
 
         return np.array(batch_x), np.array(batch_y)
 
@@ -56,4 +61,4 @@ class DatabaseSequence(utils.Sequence):
         for i, (cls_name, _) in enumerate(self.content):
             self.labels.append(cls_dict[cls_name])
 
-        self.labels = to_categorical(self.labels, num_classes=self.total_cls_cnt)
+        self.labels_hot = to_categorical(self.labels, num_classes=self.total_cls_cnt)

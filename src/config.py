@@ -18,10 +18,12 @@ layer_size_start = 50
 layer_size_stop = 100
 layer_size_step = 50
 
+svm_gamma_list = ['auto', 1, 2, 3, 5, 8, 13, 21, 34]
+
 training_total_ratio = 0.5
 validation_total_ratio = 0.3
 
-batch_size = 16  # 64
+batch_size = 8  # 64
 max_epochs = 20  # 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2
@@ -63,3 +65,6 @@ def get_labels_db_path(clusters_count):
 
 def get_convolution_datasets_path(key):
     return os.path.join(resources_path, 'dataset_' + key + '_' + get_custom_extension_without_multiplication())
+
+
+base_model_path = os.path.join(resources_path, "base_model.hdf5")
