@@ -94,14 +94,14 @@ def evaluate_model(model, test_seq):
 def main():
     logging.basicConfig(filename="base_truth.log", level=logging.DEBUG)
 
-    total_cls_cnt = file.get_total_cls_cnt(config.set_path)
+    total_cls_cnt = file.get_total_cls_cnt(config.set_path)  # LICZBA RÓŻNYCH KLAS
+    print(total_cls_cnt)
     assert total_cls_cnt != 0
     seq_train = DatabaseSequence(config.get_convolution_datasets_path('training'), config.batch_size, total_cls_cnt)
     seq_validation = DatabaseSequence(config.get_convolution_datasets_path('validation'),
                                       config.batch_size, total_cls_cnt)
 
     model, base_model = build_nn(total_cls_cnt)
-    model = tune_nn(model, base_model, seq_train, seq_validation)
 
     seq_validation.close()
     seq_train.close()
