@@ -1,15 +1,15 @@
+import logging
+
 import cv2
 import h5py
-import logging
 import matplotlib.pyplot as plt
-import os
-
 import numpy as np
-from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array
+from keras.preprocessing.image import ImageDataGenerator, img_to_array
 from sklearn.model_selection import train_test_split
 
-from src.bounding_box import BoundingBox
+from src import file
 from src import config
+from src.bounding_box import BoundingBox
 
 
 def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_n_match):
@@ -100,50 +100,6 @@ def generate_image_descriptors(photo_cropped):
     return results
 
 
-def generate_subdir_path(dir_path):
-    """
-    generates path to subdirectories in selected directory
-    :param dir_path: directory path
-    :return: path to subdir
-    """
-    # os.walk is a generator -> next gives first tuple -> second element is list of all subdir
-    sub_dirs = next(os.walk(dir_path))[1]
-    for sub_dir in sub_dirs:
-        if sub_dir == ".directory":
-            continue
-        value = os.path.join(dir_path, sub_dir)
-        yield value
-
-
-def generate_file_path(dir_path):
-    """
-    generates paths to files in selected directory
-    :param dir_path: directory path
-    :return: path to file and file name
-    """
-    files = next(os.walk(dir_path))[2]
-    for file in files:
-        if file == ".directory":
-            continue
-        yield os.path.join(dir_path, file), file
-
-
-def get_bounding_boxes(file_path):
-    """
-
-    :param file_path: path to file containing data
-    :return: dictionary of bounding boxes with key as image name
-    """
-    logging.info("Loading bounding boxes")
-    bounding_boxes = dict()
-    with open(file_path) as file:
-        for raw_line in file.readlines():
-            tokens = raw_line.strip().split(' ')
-            img_hash = tokens[0].replace("-", "")
-            bounding_boxes[img_hash] = BoundingBox(tokens[1:])
-    return bounding_boxes
-
-
 def divide_data(features_db):
     labels_list = []
     ids = []
@@ -194,18 +150,18 @@ if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
 
     features_db = h5py.File(config.features_db_path, "w")
-    bounding_boxes = get_bounding_boxes(config.bounding_boxes_path)
+    bounding_boxes = BoundingBox.get_bounding_boxes(config.bounding_boxes_path)
 
     counter = 0
     logging.info("Starting extraction")
-    for class_path in generate_subdir_path(config.set_path):
-        class_descriptors = features_db.create_group(os.path.basename(os.path.normpath(class_path)))
-        for photo_path, photo_name in generate_file_path(class_path):
+    for class_path in file.gen_subdir_path(config.set_path):
+        class_descriptors = features_db.create_group(file.get_folder(class_path))
+        for photo_path, photo_name in file.gen_file_path(class_path):
             counter += 1
             if counter % config.take_every_nth_sample != 0:
                 continue
             # removes file extension
-            photo_name_hash = photo_name.split(".")[0]
+            photo_name_hash = file.remove_extension(photo_name)
             bb = bounding_boxes[photo_name_hash]
             photo_desc = execute_sift_extraction(photo_path, bb, 1)
             for i, pic in enumerate(photo_desc):
