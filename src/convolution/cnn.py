@@ -22,7 +22,7 @@ def get_sequence_gen(img_db_path):
 
 
 def build_cnn(descriptor, layers, activation_fun, channels):
-    logging.info("[Building CNN] "
+    logging.info("Building CNN "
                  "{{descriptor:{descriptor}, layers:{layers}, activation:{activation}, channels:{channels}}}"
                  .format(descriptor=descriptor,
                          layers=layers,
