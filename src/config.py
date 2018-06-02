@@ -18,12 +18,23 @@ layer_size_start = 50
 layer_size_stop = 100
 layer_size_step = 50
 
+filter_channels_start = 8
+filter_channels_stop = 64
+filter_channels_ratio = 2
+
+# ref: https://keras.io/losses/
+# mean_squared_error
+#
+loss_functions = ["mean_squared_error", "mean_squared_logarithmic_error",
+                  "logcosh", "categorical_crossentropy", "poisson"]
+
+
 svm_gamma_list = ['auto', 1, 2, 3, 5, 8, 13, 21, 34]
 
 training_total_ratio = 0.5
 validation_total_ratio = 0.3
 
-batch_size = 8  # 64
+batch_size = 4  # 64
 max_epochs = 20  # 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2

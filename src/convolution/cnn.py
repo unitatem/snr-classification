@@ -1,4 +1,5 @@
 import logging
+import math
 
 import keras
 from keras import Input, Model, callbacks
@@ -21,7 +22,8 @@ def get_sequence_gen(img_db_path):
 
 
 def build_cnn(descriptor, layers, activation_fun, channels):
-    logging.info("Building CNN: descriptor:{descriptor} layers:{layers} activation:{activation} channels:{channels}"
+    logging.info("[Building CNN] "
+                 "{{descriptor:{descriptor}, layers:{layers}, activation:{activation}, channels:{channels}}}"
                  .format(descriptor=descriptor,
                          layers=layers,
                          activation=activation_fun,
@@ -32,8 +34,10 @@ def build_cnn(descriptor, layers, activation_fun, channels):
     x = inputs
     for level in range(layers):
         x = Conv2D(channels, (3, 3), activation=activation_fun, padding='same', name=str(level) + "_conv")(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name=str(level) + "_pool")(x)
-    channels *= 2
+        x = MaxPooling2D((2, 2), strides=(2, 2), name=str(level) + "_pool")(x)
+        channels *= 2
+        if channels > 1024:
+            channels = 1024
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(1024, activation='relu', name='dense')(x)
@@ -46,7 +50,7 @@ def build_cnn(descriptor, layers, activation_fun, channels):
 
 
 def train_model(model, gen_train, gen_validation, loss_fun):
-    logging.info("Train model: loss_fun:{loss}".format(loss=loss_fun))
+    logging.info("Train model: {{loss_fun:{loss}}}".format(loss=loss_fun))
 
     stop_callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
                                             patience=config.max_no_improvement_epochs)
@@ -65,8 +69,8 @@ def train_model(model, gen_train, gen_validation, loss_fun):
 def evaluate_model(model, gen_test):
     scores = model.evaluate_generator(gen_test)
     for i in range(len(scores)):
-        print("{name}: {value}".format(name=model.metrics_names[i],
-                                       value=scores[i]))
+        logging.info("{name}: {value}".format(name=model.metrics_names[i],
+                                              value=scores[i]))
 
 
 def main():
@@ -76,11 +80,19 @@ def main():
     gen_validation = get_sequence_gen(config.get_convolution_datasets_path('validation'))
     gen_test = get_sequence_gen(config.get_convolution_datasets_path('test'))
 
-    # TODO add loop to iterate over experiments parameters
-    model = build_cnn(1, 3, "relu", 8)
-    model = train_model(model, gen_train, gen_validation, "categorical_crossentropy")
-    evaluate_model(model, gen_test)
-    keras.backend.clear_session()
+    channels_range = [config.filter_channels_start * (2 ** m) for m in
+                      range(0, int(math.log(config.filter_channels_stop / config.filter_channels_start, 2) + 1))]
+
+    # descriptor?
+    for layer_cnt in range(config.layer_cnt_start, config.layer_cnt_stop + 1, config.layer_cnt_step):
+        for activation in config.activation_functions:
+            for channels in channels_range:
+                for loss_function in config.loss_functions:
+                    model = build_cnn(1, layer_cnt, activation, channels)
+                    model = train_model(model, gen_train, gen_validation, loss_function)
+
+                    evaluate_model(model, gen_test)
+                    keras.backend.clear_session()
 
     gen_test.close()
     gen_validation.close()
