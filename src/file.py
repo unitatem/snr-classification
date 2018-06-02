@@ -28,7 +28,7 @@ def gen_file_path(dir_path):
         yield os.path.join(dir_path, file), file
 
 
-# ToDO: might be improved!
+# TODO: @mon3 might be improved!
 def get_total_img_cnt(dataset_path):
     counter = 0
     for folder_path in gen_subdir_path(dataset_path):
@@ -45,7 +45,6 @@ def get_total_cls_cnt(dataset_path):
     """
     _, dirs, _ = next(os.walk(dataset_path))
     dir_count = len(dirs)
-    print(dir_count)
     return dir_count
 
 

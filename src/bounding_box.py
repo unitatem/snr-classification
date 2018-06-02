@@ -25,4 +25,3 @@ class BoundingBox(object):
                 hash = tokens[0].replace("-", "")
                 bounding_boxes[hash] = BoundingBox(tokens[1:])
         return bounding_boxes
-

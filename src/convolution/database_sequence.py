@@ -23,7 +23,6 @@ class DatabaseSequence(utils.Sequence):
         return int(np.ceil(self._length() / self.batch_size))
 
     def __getitem__(self, idx):
-        # number of photos taken from batch_content, e.g 16 photos at a time
         batch_content = self.content[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_x = [self.dataset[cls][img][0] for (cls, img) in batch_content]
 
@@ -47,7 +46,7 @@ class DatabaseSequence(utils.Sequence):
                 self.content.append((cls, img_hash))
         shuffle(self.content)
 
-    # ToDO: might be improved
+    # TODO: @mon3 might be improved
     def _setup_labels(self):
         cls_dict = dict()
         for i, key in enumerate(self.dataset.keys()):
@@ -58,4 +57,3 @@ class DatabaseSequence(utils.Sequence):
             self.labels.append(cls_dict[cls_name])
 
         self.labels = to_categorical(self.labels, num_classes=self.total_cls_cnt)
-        print(self.labels)
