@@ -4,9 +4,9 @@ from keras import Model, callbacks
 from keras.applications.vgg16 import VGG16
 from keras.layers import Dense, GlobalAveragePooling2D
 
+from src import config
 from src import file
 from src import metric
-from src import config
 from src.convolution.database_sequence import DatabaseSequence
 
 
@@ -97,7 +97,8 @@ def main():
 
     total_cls_cnt = file.get_total_cls_cnt(config.set_path)
     assert total_cls_cnt != 0
-    seq_train = DatabaseSequence(config.get_convolution_datasets_path('training'), config.batch_size, total_cls_cnt, True)
+    seq_train = DatabaseSequence(config.get_convolution_datasets_path('training'), config.batch_size, total_cls_cnt,
+                                 True)
     seq_validation = DatabaseSequence(config.get_convolution_datasets_path('validation'),
                                       config.batch_size, total_cls_cnt, True)
 

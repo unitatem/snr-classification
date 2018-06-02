@@ -28,31 +28,31 @@ def gen_file_path(dir_path):
         yield os.path.join(dir_path, file), file
 
 
+# TODO: @mon3 might be improved!
 def get_total_img_cnt(dataset_path):
     counter = 0
     for folder_path in gen_subdir_path(dataset_path):
-        for _, file_name in gen_file_path(folder_path):
-            counter += 1
+        _, _, files = next(os.walk(folder_path))
+        counter += len(files)
     return counter
 
 
 def get_total_cls_cnt(dataset_path):
-    counter = 0
-    for _ in gen_subdir_path(dataset_path):
-        counter += 1
-    return counter
+    """
+
+    :param dataset_path: dataset path
+    :return: total number of classes in the whole dataset
+    """
+    _, dirs, _ = next(os.walk(dataset_path))
+    dir_count = len(dirs)
+    return dir_count
 
 
 def scan_content(dataset_path):
-    total_img_cnt = get_total_img_cnt(dataset_path)
-    content = [('folder_path', 'img_name') for _ in range(total_img_cnt)]
-
-    idx = 0
+    content = []
     for folder_path in gen_subdir_path(dataset_path):
-        print(folder_path)
         for _, file_name in gen_file_path(folder_path):
-            content[idx] = (folder_path, file_name)
-            idx += 1
+            content.append((folder_path, file_name))
     return content
 
 
