@@ -129,7 +129,7 @@ def main():
 
     channels_range = [config.filter_channels_start * (2 ** m) for m in
                       range(0, int(math.log(config.filter_channels_stop / config.filter_channels_start, 2) + 1))]
-    # channels_range = [16]
+
     for bottleneck_layers in config.bottleneck_layer_sizes:
         for layer_cnt in range(config.layer_cnt_start, config.layer_cnt_stop + 1, config.layer_cnt_step):
             for activation in config.activation_functions:
@@ -139,6 +139,7 @@ def main():
                         model = train_model(model, gen_train, gen_validation, loss_function)
                         evaluate_model(model, gen_test)
                         keras.backend.clear_session()
+
 
     gen_test.close()
     gen_validation.close()

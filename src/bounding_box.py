@@ -20,7 +20,7 @@ class BoundingBox(object):
         """
         bounding_boxes = dict()
         with open(file_path) as file:
-            for raw_line in file.readlines():
+            for raw_line in file:
                 tokens = raw_line.strip().split(' ')
                 hash = tokens[0].replace("-", "")
                 bounding_boxes[hash] = BoundingBox(tokens[1:])

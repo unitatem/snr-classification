@@ -27,6 +27,7 @@ filter_channels_ratio = 2
 loss_functions = ["mean_squared_error", "mean_squared_logarithmic_error",
                   "logcosh", "categorical_crossentropy", "poisson"]
 
+save_cnn_model = False
 
 bottleneck_layer_sizes = [128, 256, 512]
 

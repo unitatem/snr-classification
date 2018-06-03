@@ -8,6 +8,7 @@ from keras.utils import to_categorical
 
 
 class DatabaseSequence(utils.Sequence):
+
     def __init__(self, db_path, batch_size, total_cls_cnt, request_one_hot_labels):
         self.dataset = h5py.File(db_path, 'r')
         self.batch_size = batch_size
@@ -44,21 +45,20 @@ class DatabaseSequence(utils.Sequence):
         return length
 
     def _setup_content(self):
-        self.content = [('cls', 'img') for _ in range(self._length())]
-        idx = 0
+        self.content = []
         for cls in self.dataset.keys():
             for img_hash in self.dataset[cls].keys():
-                self.content[idx] = (cls, img_hash)
-                idx += 1
+                self.content.append((cls, img_hash))
         shuffle(self.content)
 
+    # TODO: @mon3 might be improved
     def _setup_labels(self):
         cls_dict = dict()
         for i, key in enumerate(self.dataset.keys()):
             cls_dict[key] = i
 
-        self.labels = [0 for _ in range(self._length())]
+        self.labels = []
         for i, (cls_name, _) in enumerate(self.content):
-            self.labels[i] = cls_dict[cls_name]
+            self.labels.append(cls_dict[cls_name])
 
         self.labels_hot = to_categorical(self.labels, num_classes=self.total_cls_cnt)
