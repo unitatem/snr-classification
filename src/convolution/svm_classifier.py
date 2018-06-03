@@ -6,8 +6,8 @@ from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.svm import SVC
 
 import src.file as file
-from src.convolution.database_sequence import DatabaseSequence
 from src import config
+from src.convolution.database_sequence import DatabaseSequence
 
 
 def postprocess_features(features):

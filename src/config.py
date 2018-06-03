@@ -22,6 +22,13 @@ layer_size_step = 50
 loss_functions = ["mean_squared_error", "mean_squared_logarithmic_error",
                   "logcosh", "categorical_crossentropy"]
 
+
+def get_min_improvement_required(loss):
+    if loss == 'categorical_crossentropy':
+        return 0.001
+    return 0.00001
+
+
 bottleneck_layer_sizes = [128, 256, 512]
 
 add_dropout = False
