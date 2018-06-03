@@ -5,13 +5,18 @@ from keras.models import load_model
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.svm import SVC
 
-import file
-from convolution.database_sequence import DatabaseSequence
+import src.file as file
+from src.convolution.database_sequence import DatabaseSequence
 from src import config
 
 
 def postprocess_features(features):
-    return np.reshape(features, (features.shape[0], 7 * 7 * 512))
+    """
+
+    :param features: features from CNN last layer
+    :return: reshaped features 2D matrix: each row corresponding to 1 photo
+    """
+    return np.reshape(features, (features.shape[0], features.size / features.shape[0]))
 
 
 def transform_dataset(img_db_path, transformation_model):
@@ -41,13 +46,14 @@ def init_svm(gamma):
 
 def show_model(model):
     for i, layer in enumerate(model.layers):
-        print(i, layer.name)
+        logging.info("Layer: {} {}".format(i, layer.name))
 
 
 def main():
     logging.basicConfig(filename="svm_classifier.log", level=logging.DEBUG)
 
     base_model = load_model(config.base_model_path)
+    # show_model(base_model)
 
     features_train, labels_train = transform_dataset(config.get_convolution_datasets_path('training'), base_model)
     features_test, labels_test = transform_dataset(config.get_convolution_datasets_path('test'), base_model)

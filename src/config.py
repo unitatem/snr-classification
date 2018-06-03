@@ -1,12 +1,13 @@
 import os
 
-take_every_nth_sample = 5
+take_every_nth_sample = 1
 data_multiplication_factor = 1
 
 # every range in config is both side closed <a, b>
 clusters_count_start = 8
 clusters_count_stop = 20
 clusters_count_step = 12
+
 
 activation_functions = ['sigmoid', 'tanh', 'relu', 'elu']
 
@@ -23,10 +24,13 @@ filter_channels_stop = 64
 filter_channels_ratio = 2
 
 # ref: https://keras.io/losses/
-# mean_squared_error
-#
 loss_functions = ["mean_squared_error", "mean_squared_logarithmic_error",
                   "logcosh", "categorical_crossentropy", "poisson"]
+
+
+bottleneck_layer_sizes = [128, 256, 512]
+
+add_dropout = 0
 
 
 svm_gamma_list = ['auto', 1, 2, 3, 5, 8, 13, 21, 34]
