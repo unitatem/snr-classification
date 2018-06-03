@@ -67,7 +67,7 @@ def build_cnn(descriptor, layers, activation_fun, channels, bottleneck_layers, d
 
         x = MaxPooling2D((2, 2), strides=(2, 2), name=str(level) + "_pool")(x)
         if dropout and (level == range(layers)[-1]):
-            x = Dropout()(x)
+            x = Dropout(config.dropout_prob)(x)
         channels *= 2
         if channels > 1024:
             channels = 1024

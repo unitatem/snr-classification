@@ -32,6 +32,7 @@ save_cnn_model = False
 bottleneck_layer_sizes = [128, 256, 512]
 
 add_dropout = 0
+dropout_prob = 0.2
 
 
 svm_gamma_list = ['auto', 1, 2, 3, 5, 8, 13, 21, 34]
