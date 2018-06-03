@@ -113,9 +113,6 @@ def main():
 
     seq_test.close()
 
-    logging.info("Saving base_model")
-    base_model.save(config.base_model_path)
-
     return 0
 
 
