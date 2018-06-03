@@ -3,8 +3,7 @@ import math
 
 import keras
 from keras import Input, Model, callbacks
-from keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, Dense, Flatten, Dropout
-from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, Dense, Dropout
 
 import config
 import file
@@ -22,69 +21,51 @@ def get_sequence_gen(img_db_path):
     return data_seq
 
 
-def create_augmented_gens():
-    """
-    creates many batches of images; each batch = random transformation of images -> as a result we get many more
-    diverse images to reduce overfitting
-    :type model: cnn model
-    :return:
-    """
-    train_datagen = ImageDataGenerator(
-        rotation_range=40,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,  # random transvections
-        zoom_range=0.2,  # random zooms
-        horizontal_flip=True)
-
-    validation_datagen = ImageDataGenerator()
-    return train_datagen, validation_datagen
-
-
-def build_cnn(descriptor, layers, activation_fun, channels, bottleneck_layers, dropout=False):
+def build_cnn(layers, activation_fun, channels, bottleneck_layers, dropout=False):
     logging.info("Building CNN "
-                 "{{descriptor:{descriptor}, layers:{layers}, activation:{activation}, channels:{channels},"
+                 "layers:{layers}, activation:{activation}, channels:{channels},"
                  " bottleneck_layers: {bottleneck}, dropout: {dropout}"
-                 .format(descriptor=descriptor,
-                         layers=layers,
+                 .format(layers=layers,
                          activation=activation_fun,
                          channels=channels,
                          bottleneck=bottleneck_layers,
-                         dropout=int(dropout)))
+                         dropout=dropout))
 
     inputs = Input(shape=(224, 224, 3))
 
     x = inputs
     for level in range(layers):
-        #  1 - Convolutions
+        #  Convolutions
         x = Conv2D(channels, (3, 3), activation=activation_fun, padding='same', name=str(level) + "_conv")(x)
         # number of filters = number of feature maps at the output
 
-        # 2 - MaxPooling
+        # MaxPooling
         # 2*2 still keeps important features in-place the size of feature maps is deduced)
         # vector contains some spatial structure or some pixel patterns in the huge vector
         # size of the convolution layer divided by 2
-
+        # size of the convolution layer divided by 2
         x = MaxPooling2D((2, 2), strides=(2, 2), name=str(level) + "_pool")(x)
-        if dropout and (level == range(layers)[-1]):
-            x = Dropout(config.dropout_prob)(x)
         channels *= 2
         if channels > 1024:
             channels = 1024
 
-    # 3 - Flattening
+    # Flattening
     x = GlobalAveragePooling2D()(x)
     # Flattening: takes all pooled feature maps and puts them into 1 single vector (HUGE!)
     # We keep spatial structure information in one huge vector that goes to ANN
     # each feature map -> one specific feature of an image
 
-    #  4 - Full Connection (hidden)
+    #  Full Connection (hidden)
     # number of hidden nodes between the number of output nodes and input nodes (changeable)
     # no rule of thumb for the best size - should be tested
     x = Dense(bottleneck_layers, activation='relu', name='dense')(x)
     total_cls_cnt = file.get_total_cls_cnt(config.set_path)
 
-    #  5 - Output Layer with the size = number of possible classes
+    # Dropout to test if reduces overfitting
+    if dropout:
+        x = Dropout(config.dropout_prob)(x)
+
+    #  Output Layer with the size = number of possible classes
     x = Dense(total_cls_cnt, activation='softmax', name='predictions')(x)
 
     model = Model(inputs, x, name='ExperimentalModel')
@@ -103,11 +84,8 @@ def train_model(model, gen_train, gen_validation, loss_fun):
                   metrics=[metric.top_1_accuracy,
                            metric.top_5_accuracy])
 
-    train_datagen, validation_datagen = create_augmented_gens()
-
-    model.fit_generator(train_datagen.flow(gen_train, batch_size=config.data_multiplication_factor),
-                        validation_data=validation_datagen.flow(gen_validation,
-                        batch_size=config.data_multiplication_factor),
+    model.fit_generator(gen_train,
+                        validation_data=gen_validation,
                         epochs=config.max_epochs,
                         callbacks=[stop_callback])
     return model
@@ -116,8 +94,7 @@ def train_model(model, gen_train, gen_validation, loss_fun):
 def evaluate_model(model, gen_test):
     scores = model.evaluate_generator(gen_test)
     for i in range(len(scores)):
-        logging.info("{name}: {value}".format(name=model.metrics_names[i],
-                                              value=scores[i]))
+        logging.info("{name}: {value}".format(name="model name", value=i))
 
 
 def main():
@@ -135,11 +112,10 @@ def main():
             for activation in config.activation_functions:
                 for channels in channels_range:
                     for loss_function in config.loss_functions:
-                        model = build_cnn(1, layer_cnt, activation, channels, bottleneck_layers, bool(config.add_dropout))
-                        model = train_model(model, gen_train, gen_validation, loss_function)
+                        model = build_cnn(layer_cnt, activation, channels, bottleneck_layers, config.add_dropout)
+                        train_model(model, gen_train, gen_validation, loss_function)
                         evaluate_model(model, gen_test)
                         keras.backend.clear_session()
-
 
     gen_test.close()
     gen_validation.close()

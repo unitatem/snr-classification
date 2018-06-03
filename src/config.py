@@ -1,13 +1,12 @@
 import os
 
 take_every_nth_sample = 1
-data_multiplication_factor = 1
+data_multiplication_factor = 5
 
 # every range in config is both side closed <a, b>
 clusters_count_start = 8
 clusters_count_stop = 20
 clusters_count_step = 12
-
 
 activation_functions = ['sigmoid', 'tanh', 'relu', 'elu']
 
@@ -26,21 +25,19 @@ filter_channels_ratio = 2
 # ref: https://keras.io/losses/
 loss_functions = ["mean_squared_error", "mean_squared_logarithmic_error",
                   "logcosh", "categorical_crossentropy", "poisson"]
-
 save_cnn_model = False
 
 bottleneck_layer_sizes = [128, 256, 512]
 
-add_dropout = 0
+add_dropout = False
 dropout_prob = 0.2
-
 
 svm_gamma_list = ['auto', 1, 2, 3, 5, 8, 13, 21, 34]
 
 training_total_ratio = 0.5
 validation_total_ratio = 0.3
 
-batch_size = 4  # 64
+batch_size = 8  # 64
 max_epochs = 20  # 200
 min_improvement_required = 0.001
 max_no_improvement_epochs = 2
