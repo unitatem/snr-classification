@@ -40,7 +40,7 @@ def augment_images(photo):
 
     pictures = []
     batch = datagen.flow(photo, batch_size=config.data_multiplication_factor)
-    for i in range(0, config.data_multiplication_factor + 1):
+    for _ in range(config.data_multiplication_factor):
         pic = next(batch)
         pictures.append(pic)
     return pictures
@@ -59,7 +59,7 @@ def load_and_preprocess_img(folder_path, img_name, bounding_boxes):
 
 
 def main():
-    logging.basicConfig(filename=__file__ + '.log', level=logging.DEBUG)
+    logging.basicConfig(filename='preproces_datesetlog', level=logging.DEBUG)
 
     logging.info("Scanning content of dataset")
     content = file.scan_content(config.set_path)

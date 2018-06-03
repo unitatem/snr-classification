@@ -21,21 +21,21 @@ def get_sequence_gen(img_db_path):
     return data_seq
 
 
-def build_cnn(layers, activation_fun, channels, bottleneck_layers, dropout=False):
+def build_cnn(layers, activation_fun, bottleneck_layers, dropout=False):
     logging.info("Building CNN "
-                 "layers:{layers}, activation:{activation}, channels:{channels},"
-                 " bottleneck_layers: {bottleneck}, dropout: {dropout}"
+                 "layers:{layers}, activation:{activation}, "
+                 "bottleneck_layers: {bottleneck}, dropout: {dropout}"
                  .format(layers=layers,
                          activation=activation_fun,
-                         channels=channels,
                          bottleneck=bottleneck_layers,
                          dropout=dropout))
 
     inputs = Input(shape=(224, 224, 3))
-
     x = inputs
+
+    channels = 32
     for level in range(layers):
-        #  Convolutions
+        # Convolutions
         x = Conv2D(channels, (3, 3), activation=activation_fun, padding='same', name=str(level) + "_conv")(x)
         # number of filters = number of feature maps at the output
 
@@ -55,7 +55,7 @@ def build_cnn(layers, activation_fun, channels, bottleneck_layers, dropout=False
     # We keep spatial structure information in one huge vector that goes to ANN
     # each feature map -> one specific feature of an image
 
-    #  Full Connection (hidden)
+    # Full Connection (hidden)
     # number of hidden nodes between the number of output nodes and input nodes (changeable)
     # no rule of thumb for the best size - should be tested
     x = Dense(bottleneck_layers, activation='relu', name='dense')(x)
@@ -65,7 +65,7 @@ def build_cnn(layers, activation_fun, channels, bottleneck_layers, dropout=False
     if dropout:
         x = Dropout(config.dropout_prob)(x)
 
-    #  Output Layer with the size = number of possible classes
+    # Output Layer with the size = number of possible classes
     x = Dense(total_cls_cnt, activation='softmax', name='predictions')(x)
 
     model = Model(inputs, x, name='ExperimentalModel')
@@ -94,7 +94,8 @@ def train_model(model, gen_train, gen_validation, loss_fun):
 def evaluate_model(model, gen_test):
     scores = model.evaluate_generator(gen_test)
     for i in range(len(scores)):
-        logging.info("{name}: {value}".format(name="model name", value=i))
+        logging.info("{name}: {value}".format(name=model.metrics_names[i],
+                                              value=scores[i]))
 
 
 def main():
@@ -104,18 +105,18 @@ def main():
     gen_validation = get_sequence_gen(config.get_convolution_datasets_path('validation'))
     gen_test = get_sequence_gen(config.get_convolution_datasets_path('test'))
 
-    channels_range = [config.filter_channels_start * (2 ** m) for m in
-                      range(0, int(math.log(config.filter_channels_stop / config.filter_channels_start, 2) + 1))]
-
     for bottleneck_layers in config.bottleneck_layer_sizes:
         for layer_cnt in range(config.layer_cnt_start, config.layer_cnt_stop + 1, config.layer_cnt_step):
             for activation in config.activation_functions:
-                for channels in channels_range:
-                    for loss_function in config.loss_functions:
-                        model = build_cnn(layer_cnt, activation, channels, bottleneck_layers, config.add_dropout)
-                        train_model(model, gen_train, gen_validation, loss_function)
-                        evaluate_model(model, gen_test)
-                        keras.backend.clear_session()
+                for loss_function in config.loss_functions:
+                    model = build_cnn(layer_cnt, activation, bottleneck_layers, config.add_dropout)
+                    train_model(model, gen_train, gen_validation, loss_function)
+                    evaluate_model(model, gen_test)
+
+                    if config.save_cnn_model:
+                        logging.info("Saving base_model")
+                        model.save(config.base_model_path)
+                    keras.backend.clear_session()
 
     gen_test.close()
     gen_validation.close()

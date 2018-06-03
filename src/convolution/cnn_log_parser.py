@@ -3,7 +3,9 @@ import re
 
 def main():
     matchers = [
-        re.compile("INFO:root:Building CNN {descriptor:(.*), layers:(.*), activation:(.*), channels:(.*)}\n"),
+        re.compile(
+            "INFO:root:Building CNN layers:(.*), activation:(.*), "
+            "bottleneck_layers: (.*), dropout: (.*)\n"),
         re.compile("INFO:root:Train model: {loss_fun:(.*)}\n"),
         re.compile("INFO:root:loss:(.*)\n"),
         re.compile("INFO:root:top_1_accuracy:(.*)\n"),
@@ -21,10 +23,10 @@ def main():
             result = result[0]
 
             if line_type == 0:
-                record["descriptor"] = int(result[0])
-                record["layers"] = int(result[1])
-                record["activation"] = result[2]
-                record["channels"] = int(result[3])
+                record["layers"] = int(result[0])
+                record["activation"] = result[1]
+                record["bottleneck_layers"] = int(result[2])
+                record["dropout"] = result[3] == "True"
             elif line_type == 1:
                 record["loss_fun"] = result
             elif line_type == 2:
