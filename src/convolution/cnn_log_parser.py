@@ -1,3 +1,4 @@
+import csv
 import re
 
 
@@ -40,7 +41,12 @@ def main():
                 print(record)
                 record = {}
 
-    return dataset
+    keys = dataset[0].keys()
+    with open('cnn_results.csv', 'w', newline='') as out_file:
+        dict_writer = csv.DictWriter(out_file, fieldnames=keys)
+        dict_writer.writeheader()
+        for line in dataset:
+            dict_writer.writerow(line)
 
 
 if __name__ == '__main__':
