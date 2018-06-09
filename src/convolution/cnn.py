@@ -7,7 +7,7 @@ from keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, Dense, Dr
 from src.convolution.database_sequence import DatabaseSequence
 from src import config
 from src import file
-from src import metric
+from src import metric_wrapper
 
 
 def get_sequence_gen(img_db_path):
@@ -80,8 +80,8 @@ def train_model(model, gen_train, gen_validation, loss_fun):
 
     model.compile(optimizer='rmsprop',
                   loss=loss_fun,
-                  metrics=[metric.top_1_accuracy,
-                           metric.top_5_accuracy])
+                  metrics=[metric_wrapper.top_1_accuracy,
+                           metric_wrapper.top_5_accuracy])
 
     model.fit_generator(gen_train,
                         validation_data=gen_validation,

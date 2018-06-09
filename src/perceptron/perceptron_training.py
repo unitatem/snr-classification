@@ -9,7 +9,7 @@ from keras.models import Sequential
 from keras.utils import to_categorical
 from random import shuffle
 
-from src import metric
+from src import metric_wrapper
 from src import config
 from src.perceptron.sample_sequence import SampleSequence
 
@@ -45,8 +45,8 @@ def build_perceptron(clusters_cnt, layer_cnt, size_of_layers, activation):
     model.add(Activation('softmax'))
     model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
-                  metrics=[metric.top_1_accuracy,
-                           metric.top_5_accuracy])
+                  metrics=[metric_wrapper.top_1_accuracy,
+                           metric_wrapper.top_5_accuracy])
     return model
 
 

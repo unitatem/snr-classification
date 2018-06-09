@@ -6,7 +6,7 @@ from keras.layers import Dense, GlobalAveragePooling2D
 
 from src import config
 from src import file
-from src import metric
+from src import metric_wrapper
 from src.convolution.database_sequence import DatabaseSequence
 
 
@@ -50,8 +50,8 @@ def tune_nn(model, base_model, train_seq, validation_seq):
 
     model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
-                  metrics=[metric.top_1_accuracy,
-                           metric.top_5_accuracy])
+                  metrics=[metric_wrapper.top_1_accuracy,
+                           metric_wrapper.top_5_accuracy])
     model.fit_generator(train_seq,
                         validation_data=validation_seq,
                         epochs=config.max_epochs,
@@ -72,8 +72,8 @@ def tune_nn(model, base_model, train_seq, validation_seq):
     from keras.optimizers import SGD
     model.compile(optimizer=SGD(lr=0.0001, momentum=0.9),
                   loss='categorical_crossentropy',
-                  metrics=[metric.top_1_accuracy,
-                           metric.top_5_accuracy])
+                  metrics=[metric_wrapper.top_1_accuracy,
+                           metric_wrapper.top_5_accuracy])
 
     # we train our model again (this time fine-tuning the top 1 VGG16 blocks
     # alongside the top Dense layers

@@ -7,6 +7,7 @@ from sklearn.svm import SVC
 
 import src.file as file
 from src import config
+from src import metric_wrapper
 from src.convolution.database_sequence import DatabaseSequence
 
 
@@ -16,7 +17,7 @@ def postprocess_features(features):
     :param features: features from CNN last layer
     :return: reshaped features 2D matrix: each row corresponding to 1 photo
     """
-    return np.reshape(features, (features.shape[0], features.size / features.shape[0]))
+    return np.reshape(features, (features.shape[0], int(features.size / features.shape[0])))
 
 
 def transform_dataset(img_db_path, transformation_model):
@@ -52,7 +53,8 @@ def show_model(model):
 def main():
     logging.basicConfig(filename="svm_classifier.log", level=logging.DEBUG)
 
-    base_model = load_model(config.base_model_path)
+    base_model = load_model(config.base_model_path, custom_objects={'top_1_accuracy': metric_wrapper.top_1_accuracy,
+                                                                    'top_5_accuracy': metric_wrapper.top_5_accuracy})
     # show_model(base_model)
 
     features_train, labels_train = transform_dataset(config.get_convolution_datasets_path('training'), base_model)
