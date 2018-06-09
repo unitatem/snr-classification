@@ -34,9 +34,9 @@ bottleneck_layer_sizes = [128, 256, 512]
 add_dropout = False
 dropout_prob = 0.2
 
-save_cnn_model = False
+save_cnn_model = True
 
-svm_gamma_list = ['auto', 1, 2, 3, 5, 8, 13, 21, 34]
+svm_gamma_list = [1000.0, 100.0, 10.0, 1.0, 0.1, 0.01, 0.001]
 
 training_total_ratio = 0.5
 validation_total_ratio = 0.3
@@ -71,8 +71,10 @@ groups_db_path = {'training': os.path.join(resources_path, "training_features_" 
 
 def get_clusters_db_path(data_type, clusters_count):
     transformed_groups_db_path = {
-        'training': os.path.join(resources_path, "training_clusters_" + str(clusters_count) + '_' + get_custom_extension()),
-        'validation': os.path.join(resources_path, "validation_clusters_" + str(clusters_count) + '_' + get_custom_extension()),
+        'training': os.path.join(resources_path,
+                                 "training_clusters_" + str(clusters_count) + '_' + get_custom_extension()),
+        'validation': os.path.join(resources_path,
+                                   "validation_clusters_" + str(clusters_count) + '_' + get_custom_extension()),
         'test': os.path.join(resources_path, "test_clusters_" + str(clusters_count) + '_' + get_custom_extension())}
     return transformed_groups_db_path[data_type]
 
