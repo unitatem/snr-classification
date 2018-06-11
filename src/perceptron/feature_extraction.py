@@ -1,13 +1,15 @@
+import logging
+
 import cv2
 import h5py
-import logging
 import matplotlib.pyplot as plt
-import os
-
+import numpy as np
+from keras.preprocessing.image import ImageDataGenerator, img_to_array
 from sklearn.model_selection import train_test_split
 
-from src.bounding_box import BoundingBox
+from src import file
 from src import config
+from src.bounding_box import BoundingBox
 
 
 def match_2_sift_photos(photo1, photo1_kp, photo1_desc, photo2, photo2_kp, photo2_desc, top_n_match):
@@ -69,87 +71,78 @@ def execute_sift_extraction(photo_path, bounding_box, with_colour=1):
     photo = cv2.imread(photo_path, with_colour)
     photo_cropped = photo[bounding_box.y0:bounding_box.y0 + bounding_box.dy,
                     bounding_box.x0:bounding_box.x0 + bounding_box.dx]
-    photo_kp, photo_desc = gen_sift_features(photo_cropped)
-    return photo_cropped, photo_kp, photo_desc
+    return generate_image_descriptors(photo_cropped)
 
 
-def generate_subdir_path(dir_path):
-    """
-    generates path to subdirectories in selected directory
-    :param dir_path: directory path
-    :return: path to subdir
-    """
-    # os.walk is a generator -> next gives first tuple -> second element is list of all subdir
-    sub_dirs = next(os.walk(dir_path))[1]
-    for sub_dir in sub_dirs:
-        if sub_dir == ".directory":
-            continue
-        yield dir_path + sub_dir + '/'
+def generate_image_descriptors(photo_cropped):
+    datagen = ImageDataGenerator(
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest')
 
+    results = list()
 
-def generate_file_path(dir_path):
-    """
-    generates paths to files in selected directory
-    :param dir_path: directory path
-    :return: path to file and file name
-    """
-    files = next(os.walk(dir_path))[2]
-    for file in files:
-        if file == ".directory":
-            continue
-        yield (dir_path + file), file
+    x = img_to_array(photo_cropped)
+    x = x.reshape((1,) + x.shape)
 
+    batch = datagen.flow(x, batch_size=config.data_multiplication_factor)
+    for i in range(0, config.data_multiplication_factor + 1):
+        pic = next(batch)
+        pic = pic.reshape(pic.shape[1:4])
+        pic = pic.astype(np.uint8, copy=False)
+        _, photo_desc = gen_sift_features(pic)
+        results.append(photo_desc)
 
-def get_bounding_boxes(file_path):
-    """
-
-    :param file_path: path to file containing data
-    :return: dictionary of bounding boxes with key as image name
-    """
-    logging.info("Loading bounding boxes")
-    bounding_boxes = dict()
-    with open(file_path) as file:
-        for raw_line in file.readlines():
-            tokens = raw_line.strip().split(' ')
-            hash = tokens[0].replace("-", "")
-            bounding_boxes[hash] = BoundingBox(tokens[1:])
-    return bounding_boxes
+    return results
 
 
 def divide_data(features_db):
     labels_list = []
     ids = []
+    ids_ref = dict()
     for class_name in features_db:
         for photo_name in features_db[class_name]:
+            photo_name = photo_name.split('_')[0]
+            if photo_name in ids_ref:
+                continue
             ids.append((class_name, photo_name))
+            ids_ref[photo_name] = 0
             labels_list.append(class_name)
     split_ids = {'training': {}, 'validation': {}, 'test': {}}
 
     split_ratio = config.training_total_ratio + config.validation_total_ratio
     split_ids['training']['data'], \
-        split_ids['test']['data'], \
-        split_ids['training']['labels'], \
-        split_ids['test']['labels'] = train_test_split(ids, labels_list,
-                                                       train_size=split_ratio,
-                                                       stratify=labels_list,
-                                                       random_state=0)
+    split_ids['test']['data'], \
+    split_ids['training']['labels'], \
+    split_ids['test']['labels'] = train_test_split(ids, labels_list,
+                                                   train_size=split_ratio,
+                                                   stratify=labels_list,
+                                                   random_state=0)
 
     split_ratio = config.training_total_ratio / (config.training_total_ratio + config.validation_total_ratio)
     split_ids['training']['data'], \
-        split_ids['validation']['data'], \
-        split_ids['training']['labels'], \
-        split_ids['validation']['labels'] = train_test_split(split_ids['training']['data'],
-                                                             split_ids['training']['labels'],
-                                                             train_size=split_ratio,
-                                                             stratify=split_ids['training']['labels'],
-                                                             random_state=0)
+    split_ids['validation']['data'], \
+    split_ids['training']['labels'], \
+    split_ids['validation']['labels'] = train_test_split(split_ids['training']['data'],
+                                                         split_ids['training']['labels'],
+                                                         train_size=split_ratio,
+                                                         stratify=split_ids['training']['labels'],
+                                                         random_state=0)
 
     for group_name in split_ids.keys():
+        print(group_name)
         group_db = h5py.File(config.groups_db_path[group_name], 'w')
         for photo in split_ids[group_name]['data']:
-            if photo[0] not in group_db.keys():
-                group_db.create_group(photo[0])
-            group_db[photo[0]].create_dataset(photo[1], data=features_db[photo[0]][photo[1]])
+            class_name = photo[0]
+            if class_name not in group_db.keys():
+                group_db.create_group(class_name)
+            for i in range(0, config.data_multiplication_factor):
+                photo_name = photo[1] + "_" + str(i)
+                group_db[class_name].create_dataset(photo_name, data=features_db[class_name][photo_name])
         group_db.close()
 
 
@@ -157,22 +150,22 @@ if __name__ == "__main__":
     logging.basicConfig(filename="sift.log", level=logging.DEBUG)
 
     features_db = h5py.File(config.features_db_path, "w")
-    bounding_boxes = get_bounding_boxes(config.bounding_boxes_path)
+    bounding_boxes = BoundingBox.get_bounding_boxes(config.bounding_boxes_path)
 
     counter = 0
     logging.info("Starting extraction")
-    for class_path in generate_subdir_path(config.set_path):
-        print(class_path)
-        class_descriptors = features_db.create_group(os.path.basename(os.path.normpath(class_path)))
-        for photo_path, photo_name in generate_file_path(class_path):
+    for class_path in file.gen_subdir_path(config.set_path):
+        class_descriptors = features_db.create_group(file.get_folder(class_path))
+        for photo_path, photo_name in file.gen_file_path(class_path):
             counter += 1
             if counter % config.take_every_nth_sample != 0:
                 continue
             # removes file extension
-            photo_name_hash = photo_name.split(".")[0]
+            photo_name_hash = file.remove_extension(photo_name)
             bb = bounding_boxes[photo_name_hash]
-            photo, photo_kp, photo_desc = execute_sift_extraction(photo_path, bb, 1)
-            class_descriptors.create_dataset(photo_name_hash, data=photo_desc)
+            photo_desc = execute_sift_extraction(photo_path, bb, 1)
+            for i, pic in enumerate(photo_desc):
+                class_descriptors.create_dataset(photo_name_hash + "_" + str(i), data=photo_desc[i])
     features_db.close()
     logging.info("Extraction finished")
 
