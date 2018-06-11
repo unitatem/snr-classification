@@ -59,7 +59,7 @@ def load_and_preprocess_img(folder_path, img_name, bounding_boxes):
 
 
 def main():
-    logging.basicConfig(filename='preproces_datesetlog', level=logging.DEBUG)
+    logging.basicConfig(filename='preproces_dateset.log', level=logging.DEBUG)
 
     logging.info("Scanning content of dataset")
     content = file.scan_content(config.set_path)

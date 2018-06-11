@@ -1,14 +1,13 @@
 import logging
-import math
 
 import keras
 from keras import Input, Model, callbacks
 from keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, Dense, Dropout
 
-import config
-import file
-import metric
-from convolution.database_sequence import DatabaseSequence
+from src.convolution.database_sequence import DatabaseSequence
+from src import config
+from src import file
+from src import metric_wrapper
 
 
 def get_sequence_gen(img_db_path):
@@ -76,13 +75,13 @@ def build_cnn(layers, activation_fun, bottleneck_layers, dropout=False):
 def train_model(model, gen_train, gen_validation, loss_fun):
     logging.info("Train model: {{loss_fun:{loss}}}".format(loss=loss_fun))
 
-    stop_callback = callbacks.EarlyStopping(min_delta=config.min_improvement_required,
+    stop_callback = callbacks.EarlyStopping(min_delta=config.get_min_improvement_required(loss_fun),
                                             patience=config.max_no_improvement_epochs)
 
     model.compile(optimizer='rmsprop',
                   loss=loss_fun,
-                  metrics=[metric.top_1_accuracy,
-                           metric.top_5_accuracy])
+                  metrics=[metric_wrapper.top_1_accuracy,
+                           metric_wrapper.top_5_accuracy])
 
     model.fit_generator(gen_train,
                         validation_data=gen_validation,
